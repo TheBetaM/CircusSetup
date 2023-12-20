@@ -1,0 +1,68 @@
+﻿<Window x:Class="CircusSetup.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CircusSetup"
+        mc:Ignorable="d"
+        Title="CircusSetup" Height="550" Width="1100" Drop="Window_Drop" AllowDrop="True">
+    <Grid>
+
+        
+        <Grid Grid.Column="2" Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="400"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="28"></RowDefinition>
+                <RowDefinition></RowDefinition>
+                <RowDefinition Height="28"></RowDefinition>
+            </Grid.RowDefinitions>
+            <GridSplitter Grid.Column="1" 
+              Grid.Row="1" 
+              HorizontalAlignment="Center"
+              VerticalAlignment="Stretch"
+              Background="Gray" 
+              ShowsPreview="true"
+              Width="5"/>
+            <TreeView x:Name="treeView" Grid.Row="1" Grid.Column="0" SelectedItemChanged="treeView_SelectedItemChanged" FontSize="14">
+            </TreeView>
+            <StatusBar Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="2" Name="statusBar" FontSize="18">
+                <StatusBarItem>
+                    <TextBlock x:Name="statusText">StatusText</TextBlock>
+                </StatusBarItem>
+            </StatusBar>
+            <Menu x:Name="menu" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" FontSize="18" >
+                <MenuItem Name="openButton" Header="_Open" Click="openButton_Click"></MenuItem>
+                <MenuItem Name="reloadButton" Header="_Reload" Click="reloadButton_Click"></MenuItem>
+                <MenuItem Name="viewButton" Header="_View" Click="viewButton_Click"></MenuItem>
+                <MenuItem Name="exportButton" Header="_Export" Click="exportButton_Click"></MenuItem>
+                <MenuItem Name="toggleWrapButton" Header="_Toggle Text Wrap" Click="toggleWrapButton_Click"></MenuItem>
+                <MenuItem Name="batchTestButton" Header="_Batch Test" Click="batchTestButton_Click"></MenuItem>
+                <MenuItem Name="addAnimButton" Header="_Add To Anim Cache (0)" Click="addAnimButton_Click"></MenuItem>
+                <MenuItem Name="clearAnimButton" Header="_Clear Anim Cache" Click="clearAnimButton_Click"></MenuItem>
+                <MenuItem Name="exportToggleButton" Header="_Export In Godot Format ON" Click="exportToggleButton_Click"></MenuItem>
+            </Menu>
+            <TabControl Grid.Column="2" Grid.Row="1" Background="DimGray">
+                <TabItem Header="Main">
+                    <ScrollViewer Grid.Column="2" Grid.Row="1" >
+                        <TextBox x:Name="textBox" TextWrapping="NoWrap" Text="TextBox" IsReadOnly="True" FontSize="18" ScrollViewer.CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Drop="textBox_Drop" AllowDrop="True" PreviewDragOver="textBox_PreviewDragOver" PreviewDrop="textBox_PreviewDrop"/>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="Image">
+                    <Image x:Name="previewImage" Stretch="None">
+                        
+                    </Image>
+                </TabItem>
+                
+            </TabControl>
+            
+            
+        </Grid>
+        
+
+
+    </Grid>
+</Window>
