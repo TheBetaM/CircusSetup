@@ -38,7 +38,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Expression Group {Name}";
+            return $"Expression Group: {Name}";
         }
 
         public override string? ToDetails()

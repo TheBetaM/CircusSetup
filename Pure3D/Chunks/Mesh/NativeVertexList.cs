@@ -20,11 +20,27 @@ namespace Pure3D.Chunks
             return $"Native VertexList V {Version:X} P {UnkParam} Size {VifSize}";
         }
 
+        public override string? ToDetails()
+        {
+            StringBuilder Lines = new();
+
+            Lines.AppendLine($"Native Vertex List");
+            Lines.AppendLine($"Header: 0x{Version:X8}");
+            Lines.AppendLine($"Param: 0x{UnkParam:X8}");
+            Lines.AppendLine($"VifSize: 0x{VifSize:X8}");
+            Lines.AppendLine($"Compressed Positions: {HasComprPos}");
+            Lines.AppendLine($"Length: {Data.Length}");
+            Lines.AppendLine(Data.ToLine());
+
+            return Lines.ToString();
+        }
+
         public byte[] VifCode { get; set; }
         public List<VertexData> Vertexes = new List<VertexData>();
         public int Version;
         public int UnkParam;
         public int VifSize;
+        bool HasComprPos;
 
         public override void ReadHeader(BinaryReader reader, long length)
         {
@@ -61,16 +77,19 @@ namespace Pure3D.Chunks
             var matpal = prim.GetChild<MatrixPalette>();
             reader.ReadUInt32(); // always 4?
             uint Bitfield = reader.ReadUInt32();
+
             bool CompressedPositions = (Bitfield & (1 << 0)) != 0;
             bool UnkBit2 = (Bitfield & (1 << 1)) != 0;
-            bool UnkBit3 = (Bitfield & (1 << 2)) != 0;
-            bool UnkBit4 = (Bitfield & (1 << 3)) != 0;
-            bool UnkBit5 = (Bitfield & (1 << 4)) != 0;
-            bool HasColors = (Bitfield & (1 << 5)) != 0;
+            bool UnkBit3 = (Bitfield & (1 << 2)) != 0; // binormals?
+            bool UnkBit4 = (Bitfield & (1 << 3)) != 0; // tangents?
+
+            bool HasColors = (Bitfield & (1 << 4)) != 0;
+            bool UnkBit5 = (Bitfield & (1 << 5)) != 0;
             bool HasNormals = (Bitfield & (1 << 6)) != 0;
-            bool UnkBit7 = (Bitfield & (1 << 7)) != 0;
-            bool HasPos = (Bitfield & (1 << 8)) != 0;
-            bool HasUVs = (Bitfield & (1 << 9)) != 0;
+            bool HasPos = (Bitfield & (1 << 7)) != 0;
+
+            bool HasUVs = (Bitfield & (1 << 8)) != 0;
+            HasComprPos = CompressedPositions;
 
             uint VCount = reader.ReadUInt32();
             if (VCount < prim.NumVertices)
@@ -107,8 +126,8 @@ namespace Pure3D.Chunks
                 }
                 if (prim.UVCount != PrimitiveGroupCTTR.VertexUVCount.UVx0)
                 {
-                    Vertexes[i].U = reader.ReadUInt16() / 65535f;
-                    Vertexes[i].V = reader.ReadUInt16() / 65535f;
+                    Vertexes[i].U = reader.ReadInt16() / 32768f;
+                    Vertexes[i].V = reader.ReadInt16() / 32768f;
                 }
                 if (prim.HasColors)
                 {

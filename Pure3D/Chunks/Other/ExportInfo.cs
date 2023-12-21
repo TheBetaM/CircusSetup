@@ -27,7 +27,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"{Name} (Export Info)";
+            return $"Export Info: {Name}";
         }
 
         public override string? ToDetails()

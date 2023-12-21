@@ -14,7 +14,7 @@ namespace CircusSetup
         public bool ExtractFiles = false;
         public string ExtractPath;
         public string[] CNF_Buffer;
-        public GameVersion Version = GameVersion.USA_ver2;
+        public GameVersion Version = GameVersion.PS2_USA;
 
         public bool DetectPS2(string filePath)
         {
@@ -53,6 +53,14 @@ namespace CircusSetup
                             CNF_Buffer[2] = sr.ReadLine();
                         }
                     }
+                    if (cd.FileExists(@"UMD_DATA.BIN"))
+                    {
+                        using (StreamReader sr = new StreamReader(cd.OpenFile(@"UMD_DATA.BIN", FileMode.Open)))
+                        {
+                            CNF_Buffer = new string[1];
+                            CNF_Buffer[0] = sr.ReadLine().Substring(0, 10);
+                        }
+                    }
                     cd.Dispose();
                     cd = null;
                 }
@@ -72,20 +80,6 @@ namespace CircusSetup
                 }
             }
             if (Version == GameVersion.Unknown) return false;
-            if (Version == GameVersion.USA_ver2)
-            {
-                if (CNF_Buffer[1].Contains("1.00"))
-                {
-                    Version = GameVersion.USA_ver1;
-                }
-            }
-            else if (Version == GameVersion.DEMO_USA)
-            {
-                if (CNF_Buffer[2].Contains("PAL"))
-                {
-                    Version = GameVersion.DEMO_EUR;
-                }
-            }
             return true;
         }
 
@@ -161,20 +155,21 @@ namespace CircusSetup
         public enum GameVersion
         {
             Unknown = -1,
-            USA_ver1 = 0,
-            USA_ver2 = 1,
-            EUR = 2,
-            JPN = 3,
-            DEMO_USA = 4,
-            DEMO_EUR = 5,
+            PS2_USA = 0,
+            PS2_EUR = 2,
+            PS2_JPN = 3,
+            PSP_USA = 4,
+            PSP_EUR = 5,
+            PSP_JPN = 6,
         }
 
         Dictionary<string, GameVersion> TitleIDs = new Dictionary<string, GameVersion>(){
-            ["SLUS_209.09"] = GameVersion.USA_ver2,
-            ["SLES_515.68"] = GameVersion.EUR,
-            ["SLPM_658.01"] = GameVersion.JPN,
-            ["CRASH6\\CRASH6.ELF"] = GameVersion.DEMO_USA,
-            ["SLUS_291.01"] = GameVersion.DEMO_USA,
+            ["SLUS_211.91"] = GameVersion.PS2_USA,
+            ["SLES_534.39"] = GameVersion.PS2_EUR,
+            ["SLPM_660.90"] = GameVersion.PS2_JPN,
+            ["ULUS-10044"] = GameVersion.PSP_USA,
+            ["ULES-00168"] = GameVersion.PSP_EUR,
+            ["ULJM-05036"] = GameVersion.PSP_JPN,
         };
     }
 }

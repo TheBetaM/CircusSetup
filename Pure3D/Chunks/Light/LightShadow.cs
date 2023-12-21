@@ -5,7 +5,7 @@ using System.Text;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x13004)]
-    public class LightShadow : Unknown
+    public class LightShadow : Chunk
     {
         public uint Shadow;
 

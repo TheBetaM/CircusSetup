@@ -37,12 +37,12 @@
             <Menu x:Name="menu" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" FontSize="18" >
                 <MenuItem Name="openButton" Header="_Open" Click="openButton_Click"></MenuItem>
                 <MenuItem Name="reloadButton" Header="_Reload" Click="reloadButton_Click"></MenuItem>
-                <MenuItem Name="viewButton" Header="_View" Click="viewButton_Click"></MenuItem>
+                <!--<MenuItem Name="viewButton" Header="_View" Click="viewButton_Click"></MenuItem>-->
                 <MenuItem Name="exportButton" Header="_Export" Click="exportButton_Click"></MenuItem>
                 <MenuItem Name="toggleWrapButton" Header="_Toggle Text Wrap" Click="toggleWrapButton_Click"></MenuItem>
                 <MenuItem Name="batchTestButton" Header="_Batch Test" Click="batchTestButton_Click"></MenuItem>
-                <MenuItem Name="addAnimButton" Header="_Add To Anim Cache (0)" Click="addAnimButton_Click"></MenuItem>
-                <MenuItem Name="clearAnimButton" Header="_Clear Anim Cache" Click="clearAnimButton_Click"></MenuItem>
+                <!--<MenuItem Name="addAnimButton" Header="_Add To Anim Cache (0)" Click="addAnimButton_Click"></MenuItem>
+                <MenuItem Name="clearAnimButton" Header="_Clear Anim Cache" Click="clearAnimButton_Click"></MenuItem>-->
                 <MenuItem Name="exportToggleButton" Header="_Export In Godot Format ON" Click="exportToggleButton_Click"></MenuItem>
             </Menu>
             <TabControl Grid.Column="2" Grid.Row="1" Background="DimGray">

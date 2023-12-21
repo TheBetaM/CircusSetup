@@ -37,7 +37,7 @@ namespace Pure3D.Chunks
         {
             if (HistoryText.Count != 0)
             {
-                return $"{HistoryText[0]} (History Text)";
+                return $"History Text: ({HistoryText.Count}) {HistoryText[0]}";
             }
             else
             {

@@ -21,7 +21,7 @@ namespace Pure3D
         public uint XMA_SampleRate = 0;
         public uint XMA_NumSamples = 0;
         public string ShortName;
-        const string NameCheck1 = "\\in_game_art\\sound\\sounds\\";
+        const string NameCheck1 = "in_game_art\\sound\\sounds\\";
         const string NameCheck2 = "\\export\\sound\\source\\";
 
         public void Load(string path)

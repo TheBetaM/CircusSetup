@@ -58,7 +58,7 @@ namespace Pure3D
                             EzSwizzle ez = new EzSwizzle();
                             byte[] texData = ez.PSP_UnSwizzle(Width, Height, Bpp, RawData);
                             var indData = new List<byte>();
-                            for (int i = 0; i < ImageSize; i++)
+                            for (int i = 0; i < ImageSize && i < texData.Length; i++)
                             {
                                 byte pack = texData[i];
                                 byte ind1 = (byte)(pack & 0x0F);

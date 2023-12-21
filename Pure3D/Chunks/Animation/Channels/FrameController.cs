@@ -8,9 +8,9 @@ namespace Pure3D.Chunks
     [ChunkType(0x121201)]
     public class FrameController : Named
     {
-        public uint UnkInt1;
+        public uint UnkInt1; // autoplay?
         public uint UnkInt2;
-        public uint UnkInt3;
+        public uint UnkInt3; // count?
         public string Parameter;
 
         public string ModelName;
@@ -29,7 +29,7 @@ namespace Pure3D.Chunks
             base.ReadHeader(reader, length);
             Parameter = Encoding.ASCII.GetString(reader.ReadBytes(8));
             UnkInt2 = reader.ReadUInt32();
-            UnkInt3 = reader.ReadUInt32(); // count?
+            UnkInt3 = reader.ReadUInt32();
             ModelName = Util.ReadString(reader, ref ModelName_padding);
             AnimName = Util.ReadString(reader, ref AnimName_padding);
         }
@@ -41,7 +41,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Frame Controller {Parameter} {Name}";
+            return $"Frame Controller: {Parameter} {Name}";
         }
 
         public override string? ToDetails()
@@ -49,7 +49,7 @@ namespace Pure3D.Chunks
             StringBuilder Lines = new();
 
             Lines.AppendLine($"Frame Controller {Name}");
-            Lines.AppendLine($"Model: {ModelName}");
+            Lines.AppendLine($"Model/Object: {ModelName}");
             Lines.AppendLine($"Anim: {AnimName}");
             Lines.AppendLine($"Parameter: {Parameter}");
             Lines.AppendLine($"Ints: {UnkInt1} {UnkInt2} {UnkInt3}");

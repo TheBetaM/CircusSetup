@@ -29,7 +29,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"SP Prefab Offset";
+            return $"SP Prefab Offset {Vector.X}/{Vector.Y}/{Vector.Z}/{Vector.W}";
         }
     }
 }

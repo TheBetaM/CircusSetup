@@ -6,7 +6,7 @@ using System.Numerics;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x13002)]
-    public class LightPosition : Unknown
+    public class LightPosition : Chunk
     {
         public Vector3 Position = new Vector3();
 

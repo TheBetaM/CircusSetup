@@ -91,7 +91,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Prim Group {ShaderName}";
+            return $"Prim Group: {ShaderName}";
         }
 
         public enum PrimitiveTypes : uint

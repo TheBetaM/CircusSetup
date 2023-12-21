@@ -38,7 +38,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"FE Screen {Name}";
+            return $"FE Screen: {Name}";
         }
 
         public override string? ToDetails()

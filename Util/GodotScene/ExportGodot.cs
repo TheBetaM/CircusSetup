@@ -7,6 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO.Compression;
+using System.Numerics;
 using Pure3D;
 using Pure3D.Chunks;
 
@@ -16,24 +17,81 @@ namespace CircusSetup
     {
         public static void ExportP3D(Root RootChunk, string path)
         {
-            Stopwatch Timer = new Stopwatch();
-            Timer.Start();
+            //Stopwatch Timer = new Stopwatch();
+            //Timer.Start();
 
+            string pathDir = System.IO.Path.GetDirectoryName(path) + "\\";
+            string outName = pathDir + $"P3D.tscn";
+            GodotSceneFileCircus scene = GodotSceneFileCircus.Create("P3D");
+            bool HasDrawables = false;
+            bool HasScenegraph = false;
+
+            List<string> DrawablesUsed = new List<string>();
             foreach (var item in RootChunk.Children)
             {
                 item.OnGodotExport(path);
+                if (item is CompositeDrawableCTTR)
+                {
+                    HasDrawables = true;
+                    AddNamedScene(scene, item);
+                    foreach (var comp in item.Children)
+                    {
+                        if (comp is CompositeDrawablePrimitive prim)
+                        {
+                            DrawablesUsed.Add(prim.Name);
+                        }
+                    }
+                }
+                else if (item is Scenegraph)
+                {
+                    HasScenegraph = true;
+                    AddNamedScene(scene, item);
+                }
+                else if (item is Locator loc)
+                {
+                    GodotSceneFile.Node LocNode = new($"{loc.Name}", ExportGodot.Node3D);
+                    LocNode.KeyValues.Add("parent", ".");
+                    LocNode.Lines.Add($"{ExportGodot.transformPosition} = Vector3({loc.Position.X.ToText()},{loc.Position.Y.ToText()},{loc.Position.Z.ToText()})");
+                    scene.Nodes.Add(LocNode);
+                }
+            }
+            foreach (var item in RootChunk.Children)
+            {
+                if (item is Mesh ||
+                    item is Skin ||
+                    item is ShadowMesh)
+                {
+                    var aitem = (Named)item;
+                    if (!DrawablesUsed.Contains(aitem.Name))
+                    {
+                        AddNamedScene(scene, item);
+                    }
+                }
             }
 
-            Console.WriteLine($"END: {Timer.Elapsed}");
+            scene.WriteToFile(outName);
+            //Console.WriteLine($"END: {Timer.Elapsed}");
+        }
+
+        public static void AddNamedScene(GodotSceneFileCircus scene, Chunk bchunk)
+        {
+            var chunk = (Named)bchunk;
+            GodotFileBase.ExternalResource ModelFileReference = new($"{chunk.Name}.tscn");
+            if (bchunk is Scenegraph)
+            {
+                ModelFileReference.Path = "Scenegraph_" + ModelFileReference.Path;
+            }
+            ModelFileReference.SetAsPackedScene();
+            scene.ExternalResourceList.Add(ModelFileReference);
+
+            GodotSceneFile.Node ModelNode = new($"{chunk.Name}");
+            ModelNode.InstanceID = scene.ExternalResourceList.Count;
+            ModelNode.KeyValues.Add("parent", ".");
+            scene.Nodes.Add(ModelNode);
         }
 
 
         #region Constants
-
-        public const bool ExportModelsAsResource = true; // set to false to export COLLADA
-        public const bool ExportTexturesAsResource = true; // textures as resource can be loaded at runtime without compression or pre-processing, but loads longer
-        public const bool ExportSoundsAsResource = true; // sounds as resource can be loaded at runtime without compression or pre-processing, but loads longer
-
         public const uint Format = 3;
         public const string Node3D = "Node3D";
         public const string StandardMaterial3D = "StandardMaterial3D";
@@ -65,112 +123,7 @@ namespace CircusSetup
         {
             return f.ToString().ToLower().Replace(',', '.');
         }
-
-        public static uint GetSequenceHashCode(this List<string> sequence)
-        {
-            Crc32 crc = new Crc32();
-            const uint seed = 487;
-            const uint modifier = 31;
-
-            unchecked
-            {
-                return sequence.Aggregate(seed, (current, item) =>
-                    (current * modifier) + crc.Get(Encoding.ASCII.GetBytes(item)));
-            }
-        }
-
-        public static uint GetSequenceHashCode(this List<Color> sequence)
-        {
-            Crc32 crc = new Crc32();
-            const uint seed = 487;
-            const uint modifier = 31;
-
-            unchecked
-            {
-                return sequence.Aggregate(seed, (current, item) =>
-                    (current * modifier) + crc.Get(new byte[4] {item.R, item.G, item.B, item.A}) );
-            }
-        }
-
-        public static uint GetSequenceHashCode(this byte[] sequence)
-        {
-            Crc32 crc = new Crc32();
-            return crc.Get(sequence);
-        }
-#endregion
+        #endregion
 
     }
-
-#region CRC32
-    /// <summary>
-    /// Performs 32-bit reversed cyclic redundancy checks.
-    /// </summary>
-    public class Crc32
-    {
-#region Constants
-        /// <summary>
-        /// Generator polynomial (modulo 2) for the reversed CRC32 algorithm. 
-        /// </summary>
-        private const UInt32 s_generator = 0xEDB88320;
-#endregion
-
-#region Constructors
-        /// <summary>
-        /// Creates a new instance of the Crc32 class.
-        /// </summary>
-        public Crc32()
-        {
-            // Constructs the checksum lookup table. Used to optimize the checksum.
-            m_checksumTable = Enumerable.Range(0, 256).Select(i =>
-            {
-                var tableEntry = (uint)i;
-                for (var j = 0; j < 8; ++j)
-                {
-                    tableEntry = ((tableEntry & 1) != 0)
-                        ? (s_generator ^ (tableEntry >> 1))
-                        : (tableEntry >> 1);
-                }
-                return tableEntry;
-            }).ToArray();
-        }
-#endregion
-
-#region Methods
-        /// <summary>
-        /// Calculates the checksum of the byte stream.
-        /// </summary>
-        /// <param name="byteStream">The byte stream to calculate the checksum for.</param>
-        /// <returns>A 32-bit reversed checksum.</returns>
-        public UInt32 Get<T>(IEnumerable<T> byteStream)
-        {
-            try
-            {
-                // Initialize checksumRegister to 0xFFFFFFFF and calculate the checksum.
-                return ~byteStream.Aggregate(0xFFFFFFFF, (checksumRegister, currentByte) =>
-                          (m_checksumTable[(checksumRegister & 0xFF) ^ Convert.ToByte(currentByte)] ^ (checksumRegister >> 8)));
-            }
-            catch (FormatException e)
-            {
-                throw new Exception("Could not read the stream out as bytes.", e);
-            }
-            catch (InvalidCastException e)
-            {
-                throw new Exception("Could not read the stream out as bytes.", e);
-            }
-            catch (OverflowException e)
-            {
-                throw new Exception("Could not read the stream out as bytes.", e);
-            }
-        }
-#endregion
-
-#region Fields
-        /// <summary>
-        /// Contains a cache of calculated checksum chunks.
-        /// </summary>
-        private readonly UInt32[] m_checksumTable;
-
-#endregion
-    }
-#endregion
 }

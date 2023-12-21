@@ -145,7 +145,7 @@ namespace CircusSetup
                 textBox.Text = ((TreeViewItem)e.NewValue).Tag.ToString();
                 return;
             }
-            if (ModeRSD)
+            if (ModeRCF)
             {
 
                 return;
@@ -233,7 +233,16 @@ namespace CircusSetup
                 if (((TreeViewItem)treeView.SelectedItem).Tag is RSD)
                 {
                     SaveFileDialog sfd2 = new SaveFileDialog();
-                    sfd2.Filter = "All files|*.*";
+                    if (Util.ExportToGodot)
+                    {
+                        sfd2.FileName = "sound.res";
+                        sfd2.Filter = "RES files|*.res";
+                    }
+                    else
+                    {
+                        sfd2.FileName = "sound.wav";
+                        sfd2.Filter = "WAV files|*.wav";
+                    }
                     if (sfd2.ShowDialog() == true)
                     {
                         if (!Util.ExportToGodot)
@@ -268,7 +277,12 @@ namespace CircusSetup
                         else
                         {
                             GodotBinaryAudioStreamWAV wav = new GodotBinaryAudioStreamWAV(RSD, false);
-                            wav.WriteToFile(sfd2.FileName);
+                            //wav.WriteToFile(sfd2.FileName);
+                            string outPath = System.IO.Path.GetDirectoryName(sfd2.FileName) + "\\Sounds\\";
+                            outPath += RSD.ShortName + ".res";
+                            string dirPath = System.IO.Path.GetDirectoryName(outPath);
+                            Directory.CreateDirectory(dirPath);
+                            wav.WriteToFile(outPath);
                         }
                     }
                 }
@@ -453,13 +467,13 @@ namespace CircusSetup
             {
                 AnimCache.Add(anim);
             }
-            addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
+            //addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
         }
 
         private void clearAnimButton_Click(object sender, RoutedEventArgs e)
         {
             AnimCache.Clear();
-            addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
+            //addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
         }
 
         void LoadTreeRSD()

@@ -59,6 +59,7 @@ namespace Pure3D.Chunks
 
             var rig = File.RootChunk.GetChildByName<SkeletonCTTR>(SkeletonName);
             GodotSceneFile.InternalResource AnimLib = new ();
+            GodotSceneFile.Node AnimNode = null;
             if (!string.IsNullOrEmpty(SkeletonName) && !string.IsNullOrEmpty(rig.Name))
             {
                 rig.OnGodotExport(path);
@@ -83,7 +84,7 @@ namespace Pure3D.Chunks
                 AnimLib.Lines.Add("}");
                 scene.InternalResourceList.Add(AnimLib);
 
-                GodotSceneFile.Node AnimNode = new($"AnimationPlayer", "AnimationPlayer");
+                AnimNode = new($"AnimationPlayer", "AnimationPlayer");
                 AnimNode.KeyValues.Add("parent", $"{rig.Name}");
                 AnimNode.Lines.Add("libraries = {");
                 AnimNode.Lines.Add($"\"\": SubResource({scene.InternalResourceList.Count})");
@@ -133,6 +134,7 @@ namespace Pure3D.Chunks
                 scene.Nodes.Add(ModelNode);
             }
 
+            bool firstAnim = false;
             foreach (var frame in GetChildren<FrameController>())
             {
                 var anim = File.RootChunk.GetChildByName<Animation>(frame.AnimName);
@@ -146,6 +148,11 @@ namespace Pure3D.Chunks
                 scene.ExternalResourceList.Add(ResetAnimRef);
                 int AnimRefID = scene.ExternalResourceList.Count;
                 AnimLib.Lines.Insert(AnimLib.Lines.Count - 1, $"\"{frame.AnimName}\": ExtResource({AnimRefID}),");
+                if (!firstAnim)
+                {
+                    AnimNode.Lines.Add($"autoplay = \"{frame.AnimName}\"");
+                    firstAnim = true; // todo frame controller can contain multiple animations
+                }
             }
 
             scene.WriteToFile(outName);

@@ -37,7 +37,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Expression Mixer {Name}";
+            return $"Expression Mixer: {Name}";
         }
 
         public override string? ToDetails()

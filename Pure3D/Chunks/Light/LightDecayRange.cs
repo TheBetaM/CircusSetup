@@ -6,7 +6,7 @@ using System.Numerics;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x13006)]
-    public class LightDecayRange : Unknown
+    public class LightDecayRange : Chunk
     {
         public uint UnkInt;
         public Vector3 Vec1 = new Vector3();

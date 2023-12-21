@@ -6,7 +6,7 @@ using System.Numerics;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x13001)]
-    public class LightDirection : Unknown
+    public class LightDirection : Chunk
     {
         public Vector3 Direction = new Vector3();
 
