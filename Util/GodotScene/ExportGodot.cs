@@ -54,6 +54,10 @@ namespace CircusSetup
                     LocNode.Lines.Add($"{ExportGodot.transformPosition} = Vector3({loc.Position.X.ToText()},{loc.Position.Y.ToText()},{loc.Position.Z.ToText()})");
                     scene.Nodes.Add(LocNode);
                 }
+                else if (item is FenceCollision)
+                {
+                    AddNamedScene(scene, item);
+                }
             }
             foreach (var item in RootChunk.Children)
             {
@@ -81,10 +85,22 @@ namespace CircusSetup
             {
                 ModelFileReference.Path = "Scenegraph_" + ModelFileReference.Path;
             }
+            else if (bchunk is FenceCollision)
+            {
+                ModelFileReference.Path = "Collision_" + ModelFileReference.Path;
+            }
             ModelFileReference.SetAsPackedScene();
             scene.ExternalResourceList.Add(ModelFileReference);
 
             GodotSceneFile.Node ModelNode = new($"{chunk.Name}");
+            if (bchunk is Scenegraph)
+            {
+                ModelNode.Name = "Scenegraph_" + ModelNode.Name;
+            }
+            else if (bchunk is FenceCollision)
+            {
+                ModelNode.Name = "Collision_" + ModelNode.Name;
+            }
             ModelNode.InstanceID = scene.ExternalResourceList.Count;
             ModelNode.KeyValues.Add("parent", ".");
             scene.Nodes.Add(ModelNode);

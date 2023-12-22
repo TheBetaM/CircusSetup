@@ -37,5 +37,19 @@ namespace Pure3D.Chunks
         {
             return $"Fence Indexes: {Index1.Count}";
         }
+
+        public override string? ToDetails()
+        {
+            StringBuilder Lines = new();
+
+            Lines.AppendLine($"Fence Unk Indices List 3");
+            Lines.AppendLine($"Count: {Index1.Count}");
+            for (int i = 0; i < Index1.Count; i++)
+            {
+                Lines.AppendLine($"#{i}: {Index1[i]} / {Index2[i]} / {Flags[i]}");
+            }
+
+            return Lines.ToString();
+        }
     }
 }

@@ -8,7 +8,6 @@ namespace Pure3D.Chunks
     [ChunkType(0x7000003)]
     public class FencePositionList : Chunk
     {
-        public uint Unk;
         public List<Vector3> Positions = new List<Vector3>();
 
         public FencePositionList(File file, uint type) : base(file, type)
@@ -32,7 +31,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Fence Position List";
+            return $"Fence Position List: {Positions.Count}";
         }
 
         public override string? ToDetails()

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Pure3D;
-using Twinsanity;
 
 namespace CircusSetup
 {

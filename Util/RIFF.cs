@@ -1,7 +1,7 @@
 using System.IO;
 using System;
 
-namespace Twinsanity
+namespace CircusSetup
 {
     public static class RIFF
     {

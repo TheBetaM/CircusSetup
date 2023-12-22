@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Twinsanity
+namespace CircusSetup
 {
     // Based on code by bITmASTER and nextvolume
     // https://github.com/simias/psxsdk/blob/master/tools/vag2wav.c

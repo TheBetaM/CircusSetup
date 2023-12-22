@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using System;
-using Twinsanity.VIF;
+using CircusSetup.VIF;
 
 namespace Pure3D.Chunks
 {
@@ -75,7 +75,7 @@ namespace Pure3D.Chunks
         {
             var prim = (PrimitiveGroupCTTR)Parent;
             var matpal = prim.GetChild<MatrixPalette>();
-            reader.ReadUInt32(); // always 4?
+            uint UnkVal1 = reader.ReadUInt32();
             uint Bitfield = reader.ReadUInt32();
 
             bool CompressedPositions = (Bitfield & (1 << 0)) != 0;

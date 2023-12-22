@@ -1,4 +1,4 @@
-﻿namespace Twinsanity
+﻿namespace CircusSetup
 {
     public static class BitConv
     {
