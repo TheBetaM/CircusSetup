@@ -30,7 +30,7 @@ namespace Pure3D.Chunks
         public bool HasBoneIndices;
         public bool HasWeights;
         public bool HasSize;
-        public bool HasW;
+        public bool HasUnk;
         public bool HasBinormal;
         public bool HasTangents;
         public bool HasPositions;
@@ -58,7 +58,7 @@ namespace Pure3D.Chunks
             HasBoneIndices = (VertexType & (1 << 7)) != 0;
             HasWeights = (VertexType & (1 << 8)) != 0;
             HasSize = (VertexType & (1 << 9)) != 0;
-            HasW = (VertexType & (1 << 10)) != 0;
+            HasUnk = (VertexType & (1 << 10)) != 0;
             HasBinormal = (VertexType & (1 << 11)) != 0;
             HasTangents = (VertexType & (1 << 12)) != 0;
             HasPositions = (VertexType & (1 << 13)) != 0;
@@ -155,11 +155,11 @@ namespace Pure3D.Chunks
             Lines.AppendLine($"Has Bone Indices {HasBoneIndices}");
             Lines.AppendLine($"Has Weights {HasWeights}");
             Lines.AppendLine($"Has Size {HasSize}");
-            Lines.AppendLine($"Has W {HasW}");
-            Lines.AppendLine($"Has Binormal {HasBinormal}");
+            Lines.AppendLine($"Has Unk {HasUnk}");
+            Lines.AppendLine($"Has BiNormals {HasBinormal}");
             Lines.AppendLine($"Has Tangents {HasTangents}");
             Lines.AppendLine($"Has Positions {HasPositions}");
-            Lines.AppendLine($"Has MultipleColors {HasMultipleColors}");
+            Lines.AppendLine($"Has Multiple Colors {HasMultipleColors}");
             Lines.AppendLine($"Flags {VertexFlags}");
 
 

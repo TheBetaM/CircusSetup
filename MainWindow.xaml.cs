@@ -18,6 +18,7 @@ using System.IO;
 using System.Diagnostics;
 using Pure3D.Chunks;
 using RadcoreCementFile;
+using CircusSetup.Script;
 
 namespace CircusSetup
 {
@@ -30,9 +31,11 @@ namespace CircusSetup
         Pure3D.File P3D;
         RCF CementFile;
         Pure3D.RSD RSD;
+        CircusSetup.Script.Script ScriptFile;
         string fileName;
         bool ModeRCF = false;
         bool ModeRSD = false;
+        bool ModeScript = false;
 
         public static List<Animation> AnimCache = new List<Animation>();
 
@@ -64,6 +67,14 @@ namespace CircusSetup
                 {
                     ModeRSD = false;
                 }
+                if (fileName.ToUpper().Contains(".P3D"))
+                {
+                    ModeScript = false;
+                }
+                else
+                {
+                    ModeScript = true;
+                }
                 LoadFile();
             }
         }
@@ -74,9 +85,19 @@ namespace CircusSetup
             {
                 if (!ModeRSD)
                 {
-                    P3D = new Pure3D.File();
-                    P3D.Load(fileName);
-                    LoadTree();
+                    if (!ModeScript)
+                    {
+                        P3D = new Pure3D.File();
+                        P3D.Load(fileName);
+                        LoadTree();
+                    }
+                    else
+                    {
+                        CircusSetup.Script.ScriptParser parser = new ScriptParser();
+                        parser.Load(fileName);
+                        ScriptFile = parser.script;
+                        LoadTreeScript();
+                    }
                 }
                 else
                 {
@@ -131,6 +152,14 @@ namespace CircusSetup
                 {
                     ModeRSD = false;
                 }
+                if (fileName.ToUpper().Contains(".P3D"))
+                {
+                    ModeScript = false;
+                }
+                else
+                {
+                    ModeScript = true;
+                }
                 LoadFile();
             }
         }
@@ -147,6 +176,13 @@ namespace CircusSetup
             if (ModeRCF)
             {
 
+                return;
+            }
+            if (ModeScript)
+            {
+                StringBuilder slines = new StringBuilder();
+                slines.Append(ScriptFile.ToDetails());
+                textBox.Text = slines.ToString();
                 return;
             }
 
@@ -227,6 +263,17 @@ namespace CircusSetup
             Stopwatch Timer = new Stopwatch();
             Timer.Start();
 
+            if (ModeScript)
+            {
+                SaveFileDialog sfd2 = new SaveFileDialog();
+                sfd2.FileName = "script.lub";
+                sfd2.Filter = "LUB files|*.lub";
+                if (sfd2.ShowDialog() == true)
+                {
+                    ScriptFile.Save(sfd2.FileName);
+                }
+                return;
+            }
             if (ModeRSD)
             {
                 if (((TreeViewItem)treeView.SelectedItem).Tag is RSD)
@@ -490,6 +537,16 @@ namespace CircusSetup
             Util.ExportToGodot = !Util.ExportToGodot;
             string text = Util.ExportToGodot ? "ON" : "OFF";
             exportToggleButton.Header = $"Export In Godot Format {text}";
+        }
+
+        void LoadTreeScript()
+        {
+            treeView.Items.Clear();
+            TreeViewItem RootChunk = new TreeViewItem();
+            RootChunk.Tag = ScriptFile;
+            RootChunk.Header = System.IO.Path.GetFileName(fileName);
+            treeView.Items.Add(RootChunk);
+            RootChunk.IsExpanded = true;
         }
 
     }

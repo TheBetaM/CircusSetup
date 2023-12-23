@@ -36,7 +36,21 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Collision Surface Type Attribute";
+            return $"Collision Surface Type Attribute: {Index1.Count}";
+        }
+
+        public override string? ToDetails()
+        {
+            StringBuilder Lines = new();
+
+            Lines.AppendLine($"Type Attribute List");
+            Lines.AppendLine($"Count: {Index1.Count}");
+            for (int i = 0; i < Index1.Count; i++)
+            {
+                Lines.AppendLine($"#{i}: {Index1[i]}/{Index2[i]}");
+            }
+
+            return Lines.ToString();
         }
     }
 }

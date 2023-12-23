@@ -8,13 +8,14 @@ namespace Pure3D.Chunks
     public class Light : Named
     {
         public uint Bitfield;
+        // 0 - ambient, 1 - point, 2 - directional, 3 - spot
         public uint Type;
         public byte R;
         public byte G;
         public byte B;
         public byte A;
-        public float UnkFloat;
-        public uint UnkInt1;
+        public float UnkFloat1;
+        public float UnkFloat2;
         public uint UnkInt2;
         public uint UnkInt3;
 
@@ -32,8 +33,8 @@ namespace Pure3D.Chunks
             G = reader.ReadByte();
             B = reader.ReadByte();
             A = reader.ReadByte();
-            UnkFloat = reader.ReadSingle();
-            UnkInt1 = reader.ReadUInt32();
+            UnkFloat1 = reader.ReadSingle();
+            UnkFloat2 = reader.ReadSingle();
             UnkInt2 = reader.ReadUInt32();
             UnkInt3 = reader.ReadUInt32();
         }
@@ -56,10 +57,10 @@ namespace Pure3D.Chunks
             Lines.AppendLine($"Type: {Type}");
             Lines.AppendLine($"Color: {R} / {G} / {B} / {A}");
             Lines.AppendLine($"Bitfield: {Bitfield:X8}");
-            Lines.AppendLine($"UnkFloat: {UnkFloat}");
-            Lines.AppendLine($"UnkInt1: {UnkInt1}");
-            Lines.AppendLine($"UnkInt1: {UnkInt2}");
-            Lines.AppendLine($"UnkInt1: {UnkInt3}");
+            Lines.AppendLine($"UnkFloat1: {UnkFloat1}");
+            Lines.AppendLine($"UnkFloat2: {UnkFloat2}");
+            Lines.AppendLine($"UnkInt2: {UnkInt2}");
+            Lines.AppendLine($"UnkInt3: {UnkInt3}");
 
             return Lines.ToString();
         }

@@ -26,26 +26,27 @@ namespace CircusSetup
             bool HasDrawables = false;
             bool HasScenegraph = false;
 
-            List<string> DrawablesUsed = new List<string>();
+            //List<string> DrawablesUsed = new List<string>();
+            List<string> ModelsUsed = new List<string>();
             foreach (var item in RootChunk.Children)
             {
                 item.OnGodotExport(path);
-                if (item is CompositeDrawableCTTR)
+                if (item is CompositeDrawableCTTR draw)
                 {
-                    HasDrawables = true;
                     AddNamedScene(scene, item);
                     foreach (var comp in item.Children)
                     {
                         if (comp is CompositeDrawablePrimitive prim)
                         {
-                            DrawablesUsed.Add(prim.Name);
+                            ModelsUsed.Add(prim.Name);
                         }
                     }
                 }
-                else if (item is Scenegraph)
+                else if (item is Scenegraph graph)
                 {
                     HasScenegraph = true;
                     AddNamedScene(scene, item);
+                    //NestedSceneGraph(graph, ref DrawablesUsed);
                 }
                 else if (item is Locator loc)
                 {
@@ -66,7 +67,7 @@ namespace CircusSetup
                     item is ShadowMesh)
                 {
                     var aitem = (Named)item;
-                    if (!DrawablesUsed.Contains(aitem.Name))
+                    if (!ModelsUsed.Contains(aitem.Name))
                     {
                         AddNamedScene(scene, item);
                     }
@@ -104,6 +105,21 @@ namespace CircusSetup
             ModelNode.InstanceID = scene.ExternalResourceList.Count;
             ModelNode.KeyValues.Add("parent", ".");
             scene.Nodes.Add(ModelNode);
+        }
+
+        static void NestedSceneGraph(Chunk parent, ref List<string> Drawables)
+        {
+            if (parent is ScenegraphDrawable draw)
+            {
+                if (!Drawables.Contains(draw.Name))
+                {
+                    Drawables.Add(draw.Name);
+                }
+            }
+            foreach (var item in parent.Children)
+            {
+                NestedSceneGraph(item, ref Drawables);
+            }
         }
 
 

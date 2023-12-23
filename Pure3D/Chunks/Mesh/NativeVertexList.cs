@@ -59,11 +59,12 @@ namespace Pure3D.Chunks
                 {
                     using (var preader = new BinaryReader(stream))
                     {
-                        try{
+                        try {
                             ReadPSP(preader, stream.Length);
                         }
-                        catch{
-                            Console.WriteLine("FAILED TO LOAD PSP MODEL!");
+                        catch {
+                            var parchunk = (Named)Parent;
+                            Console.WriteLine($"FAILED TO LOAD PSP MODEL: {parchunk.Name}");
                         }
                         
                     }
@@ -95,12 +96,10 @@ namespace Pure3D.Chunks
             if (VCount < prim.NumVertices)
             {
                 VCount = reader.ReadUInt32();
-                reader.ReadBytes(0xB4);
+                reader.ReadBytes(0x20);
             }
-            else
-            {
-                reader.ReadBytes(0x94);
-            }
+            reader.ReadBytes(0x94);
+            
             for (int i = 0; i < VCount; i++)
             {
                 Vertexes.Add(new VertexData());
@@ -379,12 +378,6 @@ namespace Pure3D.Chunks
             public JointInfo Joint = new JointInfo();
             public byte ER, EG, EB, EA; // Emit colors
             public bool Conn;
-            public List<BlendShapeVertex> BlendShapes = new List<BlendShapeVertex>();
-        }
-
-        public class BlendShapeVertex
-        {
-            public Vector4 Offset;
         }
     }
 }

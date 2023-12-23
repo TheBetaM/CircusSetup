@@ -11,16 +11,16 @@ namespace Pure3D.Chunks
     public class LevelDataParam : Named
     {
         public uint UnkInt1;
-        public Vector3 Pos1 = new Vector3();
-        public Vector3 Pos2 = new Vector3();
-        public Vector3 Pos3 = new Vector3();
+        public Vector3 Pos1 = new Vector3(); // pos?
+        public Vector3 Pos2 = new Vector3(); // rot? (in MoM it's a second position instead, maybe player 2 related?)
+        public Vector3 Pos3 = new Vector3(1f, 1f, 1f); // scale?
 
         // MoM
         public uint ItemCount;
         public string StartingRoomName;
         public ulong StartingRoomName_padding;
-        public float UnkFloat1;
-        public float UnkFloat2;
+        public float UnkFloat1; // y rotation of the room?
+        public float UnkFloat2; // y rotation of the room?
 
         public LevelDataParam(File file, uint type) : base(file, type)
         {
@@ -57,6 +57,21 @@ namespace Pure3D.Chunks
         public override string ToString()
         {
             return $"Param: {Name} / {StartingRoomName}";
+        }
+
+        public override string? ToDetails()
+        {
+            StringBuilder Lines = new();
+
+            Lines.AppendLine($"Level Data Param: {Name}");
+            Lines.AppendLine($"Starting Room Name: {StartingRoomName}");
+            Lines.AppendLine($"Unk Floats: {UnkFloat1}/{UnkFloat2}");
+            Lines.AppendLine($"Vectors:");
+            Lines.AppendLine($"{Pos1}");
+            Lines.AppendLine($"{Pos2}");
+            Lines.AppendLine($"{Pos3}");
+
+            return Lines.ToString();
         }
     }
 }

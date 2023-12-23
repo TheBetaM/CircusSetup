@@ -11,9 +11,9 @@ namespace Pure3D.Chunks
     public class LevelDataName : Named
     {
         public uint UnkInt1;
-        public uint UnkInt2;
-        public uint ItemCount1;
-        public uint ItemCount2;
+        public uint UnkInt2; // 0 or 1
+        public uint ItemCount1; // preloads
+        public uint ItemCount2; // params
 
         public string StartingRoomName;
         public ulong StartingRoomName_padding;
@@ -50,6 +50,18 @@ namespace Pure3D.Chunks
         public override string ToString()
         {
             return $"Level Name: {Name} / Start: {StartingRoomName}";
+        }
+
+        public override string? ToDetails()
+        {
+            StringBuilder Lines = new();
+
+            Lines.AppendLine($"Level Name: {Name}");
+            Lines.AppendLine($"Start: {StartingRoomName}");
+            Lines.AppendLine($"Ints: {UnkInt1}/{UnkInt2}");
+            Lines.AppendLine($"Counts: {ItemCount1}/{ItemCount2}");
+
+            return Lines.ToString();
         }
     }
 }

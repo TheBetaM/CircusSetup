@@ -7,6 +7,7 @@ namespace Pure3D.Chunks.Game
     [ChunkType(0x3F00020)]
     public class WorldDef : Named
     {
+        public ushort UnkShort1;
         public byte[] Data;
         public uint UnkPlatformSpecific;
 
@@ -18,6 +19,7 @@ namespace Pure3D.Chunks.Game
         public override void ReadHeader(BinaryReader reader, long length)
         {
             base.ReadHeader(reader, length);
+            UnkShort1 = reader.ReadUInt16();
             UnkPlatformSpecific = reader.ReadUInt32(); // the only value that differs between consoles
             ushort[] UnkShorts = new ushort[17];
             for (int i = 0; i < UnkShorts.Length; i++)

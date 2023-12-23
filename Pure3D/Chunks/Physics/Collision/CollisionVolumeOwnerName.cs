@@ -5,7 +5,7 @@ using System.Text;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x7010022)]
-    public class CollisionVolumeOwnerName : Unknown
+    public class CollisionVolumeOwnerName : Named
     {
         public CollisionVolumeOwnerName(File file, uint type) : base(file, type)
         {
@@ -14,7 +14,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Collision Volume Owner Name";
+            return $"Collision Volume Owner Name: {Name}";
         }
     }
 }

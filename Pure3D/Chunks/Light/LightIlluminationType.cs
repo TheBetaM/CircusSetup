@@ -5,11 +5,11 @@ using System.Text;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x13008)]
-    public class IlluminationType : Unknown
+    public class LightIlluminationType : Chunk
     {
         public uint Type;
 
-        public IlluminationType(File file, uint type) : base(file, type)
+        public LightIlluminationType(File file, uint type) : base(file, type)
         {
 
         }
@@ -26,7 +26,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Illumination Type {Type}";
+            return $"Light Illumination Type {Type}";
         }
     }
 }
