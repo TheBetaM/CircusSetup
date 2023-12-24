@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CircusSetup.Script
 {
-    public class GOD : Script
+    public class GOD_Script : Script
     {
         public override FileTypes FileType => FileTypes.GOD;
         

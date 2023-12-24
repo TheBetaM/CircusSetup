@@ -258,24 +258,13 @@ namespace CircusSetup
 
         private void exportButton_Click(object sender, RoutedEventArgs e)
         {
-            if (treeView.SelectedItem == null) return;
 
             Stopwatch Timer = new Stopwatch();
             Timer.Start();
 
-            if (ModeScript)
-            {
-                SaveFileDialog sfd2 = new SaveFileDialog();
-                sfd2.FileName = "script.lub";
-                sfd2.Filter = "LUB files|*.lub";
-                if (sfd2.ShowDialog() == true)
-                {
-                    ScriptFile.Save(sfd2.FileName);
-                }
-                return;
-            }
             if (ModeRSD)
             {
+                if (treeView.SelectedItem == null) return;
                 if (((TreeViewItem)treeView.SelectedItem).Tag is RSD)
                 {
                     SaveFileDialog sfd2 = new SaveFileDialog();
@@ -336,6 +325,7 @@ namespace CircusSetup
             }
             if (ModeRCF)
             {
+                if (treeView.SelectedItem == null) return;
                 if (((TreeViewItem)treeView.SelectedItem).Tag is RCF.RCF_HEADER)
                 {
                     SaveFileDialog sfd2 = new SaveFileDialog();
@@ -357,6 +347,18 @@ namespace CircusSetup
                 }
                 return;
             }
+            if (ModeScript)
+            {
+                SaveFileDialog sfd2 = new SaveFileDialog();
+                sfd2.FileName = ScriptFile.FullName.Split('\\').Last().Replace(".lua",".lub");//"script.lub";
+                sfd2.Filter = "LUB files|*.lub";
+                if (sfd2.ShowDialog() == true)
+                {
+                    ScriptFile.Save(sfd2.FileName);
+                }
+                return;
+            }
+            if (treeView.SelectedItem == null) return;
             Chunk chunk = (Chunk)((TreeViewItem)treeView.SelectedItem).Tag;
 
             if (((TreeViewItem)treeView.SelectedItem).Tag is Pure3D.Chunks.Root)
@@ -422,10 +424,10 @@ namespace CircusSetup
 
             BatchTest(paths, errors);
 
-            Debug.WriteLine($"Batch testing done. Checked {paths.Count} files. Errors: {errors.Count}");
+            Console.WriteLine($"Batch testing done. Checked {paths.Count} files. Errors: {errors.Count}");
             for (int i = 0; i < errors.Count; i++)
             {
-                Debug.WriteLine(errors[i]);
+                Console.WriteLine(errors[i]);
             }
         }
 
@@ -450,6 +452,9 @@ namespace CircusSetup
             List<string> UnkTypesFiles = new List<string>();
             for (int p = 0; p < paths.Count; p++)
             {
+                //P3D = new Pure3D.File();
+                //P3D.Load(paths[p]);
+                
                 try
                 {
                     P3D = new Pure3D.File();
@@ -459,6 +464,7 @@ namespace CircusSetup
                 {
                     errors.Add(paths[p]);
                 }
+                
                 Recursive_CheckUnk(P3D.RootChunk, ref UnkTypes, ref UnkTypesFiles, paths[p]);
             }
             for (int i = 0; i < UnkTypes.Count; i++)
@@ -472,6 +478,7 @@ namespace CircusSetup
         {
             foreach (Chunk item in root.Children)
             {
+                /*
                 if (item is Unknown && item.ToString().StartsWith("Unknown"))
                 {
                     if (!UnkTypes.Contains(item.Type))
@@ -479,6 +486,24 @@ namespace CircusSetup
                         UnkTypes.Add(item.Type);
                         UnkTypesFiles.Add(file);
                     }
+                }
+                */
+                if (item is Mesh || item is Skin)
+                {
+                    /*
+                    foreach (var pitem in item.Children)
+                    {
+                        if (pitem is PrimitiveGroupCTTR prim)
+                        {
+                            var nat = prim.GetChild<NativeVertexList>();
+                            if (nat != null && !UnkTypes.Contains(nat.PSP_MeshType))
+                            {
+                                UnkTypes.Add(nat.PSP_MeshType);
+                                UnkTypesFiles.Add(file);
+                            }
+                        }
+                    }
+                    */
                 }
                 Recursive_CheckUnk(item, ref UnkTypes, ref UnkTypesFiles, file);
             }

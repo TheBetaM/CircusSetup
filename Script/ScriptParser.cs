@@ -42,6 +42,7 @@ namespace CircusSetup.Script
             switch (Tag)
             {
                 case 0x69676542: // "BeginObject" GOD Lua object holder (CTTR)
+                    script = new GOD_Script();
                     break;
                 case 0x65746E65: // "enterCondition" plain text FightTree (CTTR)
                     break;
@@ -53,6 +54,7 @@ namespace CircusSetup.Script
                 case 0xDEC15109: // binary decision tree (Titans/MoM)
                     break;
                 default: // plain text Lua (rare)
+                    script = new LUA_Script();
                     break;
             }
             if (script == null)

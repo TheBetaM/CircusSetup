@@ -2,18 +2,18 @@
 using System.IO;
 using System.Text;
 using System;
-using System.Numerics;
 
 namespace Pure3D.Chunks
 {
-    [ChunkType(0x10F00)]
-    public class VertexAnimVector3Channel : Named
+    [ChunkType(0x10F02)]
+    public class VertexAnimColorChannel : Named
     {
         public uint UnkInt1;
         public List<uint> Ind = new List<uint>();
-        public List<Vector3> Pos = new List<Vector3>();
+        public List<ByteColour> Col = new List<ByteColour>();
+        public List<uint> UnkInts = new List<uint>();
 
-        public VertexAnimVector3Channel(File file, uint type) : base(file, type)
+        public VertexAnimColorChannel(File file, uint type) : base(file, type)
         {
 
         }
@@ -26,7 +26,8 @@ namespace Pure3D.Chunks
             for (int i = 0; i < Count; i++)
             {
                 Ind.Add(reader.ReadUInt32());
-                Pos.Add(Util.ReadVector3(reader));
+                Col.Add(Util.ReadColour(reader));
+                UnkInts.Add(reader.ReadUInt32());
             }
         }
 
@@ -37,18 +38,18 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Channel {Name}";
+            return $"Color Channel {Name}";
         }
 
         public override string? ToDetails()
         {
             StringBuilder Lines = new();
 
-            Lines.AppendLine($"Channel {Name}");
+            Lines.AppendLine($"Color Channel {Name}");
             Lines.AppendLine($"VCount {Ind.Count}");
             for (int i = 0; i < Ind.Count; i++)
             {
-                Lines.AppendLine($"{Ind[i]}: {Pos[i]}");
+                Lines.AppendLine($"{Ind[i]}: {Col[i]} ({UnkInts[i]})");
             }
 
             return Lines.ToString();

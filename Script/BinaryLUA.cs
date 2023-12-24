@@ -308,7 +308,19 @@ namespace CircusSetup.Script
                 writer.Write(Code.Count);
                 foreach (var item in Code)
                 {
-                    writer.Write(item);
+                    var opcode = item & 0x3F;
+                    if (opcode == (uint)OpCodeTitans.TitansAdd)
+                    {
+                        uint fixCode = item - opcode;
+                        //fixCode += (uint)OpCodeTitans.NewTable;
+                        fixCode += (uint)OpCodeTitans.Closure;
+                        writer.Write(fixCode);
+                        //writer.Write(item);
+                    }
+                    else
+                    {
+                        writer.Write(item);
+                    }
                 }
             }
             
@@ -342,17 +354,15 @@ namespace CircusSetup.Script
             sb.AppendLine($"{add}Functions: {func.LocalFuncs.Count}");
             sb.AppendLine($"{add}Codes: {func.Code.Count}");
             int i = 0;
-            /*
             foreach (var item in func.Code)
             {
                 var opcode = item & 0x3F;
                 var itemA = (item >> 6) & 0xFF;
                 var itemB = (item >> 14) & 0x1FF;
                 var itemC = (item >> 23) & 0x1FF;
-                sb.AppendLine($"{add}[{i}]{item:X8}: {opcode}/{(OpCode)opcode} {itemA} {itemB} {itemC}");
+                sb.AppendLine($"{add}[{i}]{item:X8}: {opcode}/{(OpCodeTitans)opcode} {itemA} {itemB} {itemC}");
                 i++;
             }
-            */
             foreach (var item in func.LocalFuncs)
             {
                 NestedFunc(item, sb, add + "---");

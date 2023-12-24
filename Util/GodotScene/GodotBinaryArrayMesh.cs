@@ -361,9 +361,9 @@ namespace CircusSetup
                         var vert = natlist.Vertexes[v];
                         if (Sub.HasNormals)
                         {
-                            byte NX = (byte)(-vert.NX * 127);
-                            byte NY = (byte)(-vert.NY * 127);
-                            byte NZ = (byte)(-vert.NZ * 127);
+                            byte NX = vert.BNX;
+                            byte NY = vert.BNY;
+                            byte NZ = vert.BNZ;
                             VertexData.Add(255); 
                             VertexData.Add(NY); 
                             VertexData.Add(NX); 
@@ -544,6 +544,17 @@ namespace CircusSetup
                         index_count += 6;
                     }
                     */
+                    
+                    format |= (int)ArrayFormatFlags.Index;
+                }
+                if (natlist != null)
+                {
+                    for (int d = 0; d < natlist.Indices.Count; d++)
+                    {
+                        byte[] id = BitConverter.GetBytes((ushort)natlist.Indices[d]);
+                        IndexData.AddRange(id);
+                    }
+                    index_count = natlist.Indices.Count;
                     
                     format |= (int)ArrayFormatFlags.Index;
                 }
