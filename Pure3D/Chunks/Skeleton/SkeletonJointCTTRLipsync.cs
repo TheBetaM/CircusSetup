@@ -9,15 +9,31 @@ using Pure3D.Chunks;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x23002)]
-    public class SkeletonPartition : Unknown
+    public class SkeletonJointCTTRLipsync : Named
     {
-        public SkeletonPartition(File file, uint type) : base(file, type)
+        public List<uint> UnkInts = new List<uint>();
+        public SkeletonJointCTTRLipsync(File file, uint type) : base(file, type)
         {
+        }
+
+        public override void ReadHeader(BinaryReader reader, long length)
+        {
+            base.ReadHeader(reader, length);
+            uint Count = reader.ReadUInt32();
+            for (int i = 0; i < Count; i++)
+            {
+                UnkInts.Add(reader.ReadUInt32());
+            }
+        }
+
+        public override void WriteHeader(BinaryWriter writer)
+        {
+            throw new NotImplementedException();
         }
 
         public override string ToString()
         {
-            return $"Skeleton Partition";
+            return $"Skeleton Lipsync {Name}: {UnkInts.Count}";
         }
     }
 }

@@ -6,11 +6,37 @@ using Pure3D.Chunks;
 namespace Pure3D.Chunks
 {
     [ChunkType(0x15B01)]
-    public class ParticleUnk2 : Unknown
+    public class ParticleUnk2 : Chunk
     {
+        public uint UnkInt1;
+        public float UnkFloat1;
+        public float UnkFloat2;
+        public float UnkFloat3;
+        public float UnkFloat4;
+        public float UnkFloat5;
         public ParticleUnk2(File file, uint type) : base(file, type)
         {
 
+        }
+
+        public override void ReadHeader(BinaryReader reader, long length)
+        {
+            UnkInt1 = reader.ReadUInt32();
+            UnkFloat1 = reader.ReadSingle();
+            UnkFloat2 = reader.ReadSingle();
+            UnkFloat3 = reader.ReadSingle();
+            UnkFloat4 = reader.ReadSingle();
+            UnkFloat5 = reader.ReadSingle();
+        }
+
+        public override void WriteHeader(BinaryWriter writer)
+        {
+            writer.Write(UnkInt1);
+            writer.Write(UnkFloat1);
+            writer.Write(UnkFloat2);
+            writer.Write(UnkFloat3);
+            writer.Write(UnkFloat4);
+            writer.Write(UnkFloat5);
         }
 
         public override string ToString()

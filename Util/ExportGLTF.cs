@@ -84,10 +84,10 @@ namespace CircusSetup
             List<string> MaterialDupeCheck = new List<string>();
             List<int> MaterialIDs = new List<int>();
 
-            List<PrimitiveGroupCTTR> prims = new List<PrimitiveGroupCTTR>();
+            List<PrimitiveGroup> prims = new List<PrimitiveGroup>();
             foreach (var item in Model.Children)
             {
-                if (item is PrimitiveGroupCTTR prim)
+                if (item is PrimitiveGroup prim)
                 {
                     prims.Add(prim);
                 }
@@ -128,7 +128,7 @@ namespace CircusSetup
             
             for (int i = 0; i < Model.NumPrimGroups; i++)
             {
-                PrimitiveGroupCTTR Sub = prims[i];
+                PrimitiveGroup Sub = prims[i];
                 var primType = Sub.PrimitiveType;
                 var inds = Sub.GetChild<IndexList>();
                 var poslist = Sub.GetChild<PositionList>();
@@ -144,11 +144,11 @@ namespace CircusSetup
                 var hasTangents = tanlist != null;
 
                 int primCount = 3;
-                if (primType == PrimitiveGroupCTTR.PrimitiveTypes.Points)
+                if (primType == PrimitiveGroup.PrimitiveTypes.Points)
                 {
                     primCount = 1;
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.LineList || primType == PrimitiveGroupCTTR.PrimitiveTypes.LineStrip)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.LineList || primType == PrimitiveGroup.PrimitiveTypes.LineStrip)
                 {
                     primCount = 2;
                 }
@@ -217,7 +217,7 @@ namespace CircusSetup
                     }
                 }
 
-                if (primType == PrimitiveGroupCTTR.PrimitiveTypes.TriangleList)
+                if (primType == PrimitiveGroup.PrimitiveTypes.TriangleList)
                 {
                     for (int d = 0; d < inds.Indices.Length - 2; d++)
                     {
@@ -230,7 +230,7 @@ namespace CircusSetup
                         prim.AddTriangle(v1b, v2b, v3b);
                     }
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.Points)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.Points)
                 {
                     // untested
                     for (int d = 0; d < inds.Indices.Length; d++)
@@ -238,7 +238,7 @@ namespace CircusSetup
                         prim.AddPoint(vert[(int)inds.Indices[d]]);
                     }
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.LineList)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.LineList)
                 {
                     // untested
                     for (int d = 0; d < inds.Indices.Length - 1; d++)
@@ -249,7 +249,7 @@ namespace CircusSetup
                         prim.AddLine(v1b, v2b);
                     }
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.LineStrip)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.LineStrip)
                 {
                     // untested, probably wrong
                     for (int d = 0; d < inds.Indices.Length - 1; d++)
@@ -308,10 +308,10 @@ namespace CircusSetup
             List<string> MaterialDupeCheck = new List<string>();
             List<int> MaterialIDs = new List<int>();
 
-            List<PrimitiveGroupCTTR> prims = new List<PrimitiveGroupCTTR>();
+            List<PrimitiveGroup> prims = new List<PrimitiveGroup>();
             foreach (var item in Model.Children)
             {
-                if (item is PrimitiveGroupCTTR prim)
+                if (item is PrimitiveGroup prim)
                 {
                     prims.Add(prim);
                 }
@@ -352,7 +352,7 @@ namespace CircusSetup
             
             for (int i = 0; i < Model.NumPrimGroups; i++)
             {
-                PrimitiveGroupCTTR Sub = prims[i];
+                PrimitiveGroup Sub = prims[i];
                 var primType = Sub.PrimitiveType;
                 var inds = Sub.GetChild<IndexList>();
                 var poslist = Sub.GetChild<PositionList>();
@@ -368,11 +368,11 @@ namespace CircusSetup
                 var hasTangents = tanlist != null;
 
                 int primCount = 3;
-                if (primType == PrimitiveGroupCTTR.PrimitiveTypes.Points)
+                if (primType == PrimitiveGroup.PrimitiveTypes.Points)
                 {
                     primCount = 1;
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.LineList || primType == PrimitiveGroupCTTR.PrimitiveTypes.LineStrip)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.LineList || primType == PrimitiveGroup.PrimitiveTypes.LineStrip)
                 {
                     primCount = 2;
                 }
@@ -426,7 +426,7 @@ namespace CircusSetup
                     }
                 }
 
-                if (primType == PrimitiveGroupCTTR.PrimitiveTypes.TriangleList)
+                if (primType == PrimitiveGroup.PrimitiveTypes.TriangleList)
                 {
                     for (int d = 0; d < inds.Indices.Length - 2; d++)
                     {
@@ -439,7 +439,7 @@ namespace CircusSetup
                         prim.AddTriangle(v1b, v2b, v3b);
                     }
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.Points)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.Points)
                 {
                     // untested
                     for (int d = 0; d < inds.Indices.Length; d++)
@@ -447,7 +447,7 @@ namespace CircusSetup
                         prim.AddPoint(vert[(int)inds.Indices[d]]);
                     }
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.LineList)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.LineList)
                 {
                     // untested
                     for (int d = 0; d < inds.Indices.Length - 1; d++)
@@ -458,7 +458,7 @@ namespace CircusSetup
                         prim.AddLine(v1b, v2b);
                     }
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.LineStrip)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.LineStrip)
                 {
                     // untested, probably wrong
                     for (int d = 0; d < inds.Indices.Length - 1; d++)

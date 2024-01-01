@@ -17,9 +17,6 @@ namespace Pure3D
         public string Desc;
         public byte[] Data;
         public uint Interleave;
-        public byte XMA_Version = 0;
-        public uint XMA_SampleRate = 0;
-        public uint XMA_NumSamples = 0;
         public string ShortName;
         const string NameCheck1 = "in_game_art\\sound\\sounds\\";
         const string NameCheck2 = "\\export\\sound\\source\\";
@@ -58,41 +55,17 @@ namespace Pure3D
             Name = new string(reader.ReadChars(0x8C));
             Desc = new string(reader.ReadChars(0x100));
             reader.ReadBytes(0x65C); // padding to 0x800
-            if (CodecString == "XMA ")
-            {
-                BinaryReader2 readerb = new BinaryReader2(reader.BaseStream);
-                readerb.BaseStream.Position = 0x800;
-                uint XMA_ChunkSize = readerb.ReadUInt32();
-                uint XMA_SeekSize = readerb.ReadUInt32();
-                uint XMA_StreamSize = readerb.ReadUInt32();
-                XMA_Version = readerb.ReadByte();
-                if (XMA_Version == 3)
-                {
-                    readerb.BaseStream.Position = 0x80C + 0x0C;
-                    XMA_SampleRate = readerb.ReadUInt32();
-                    readerb.BaseStream.Position = 0x80C + 0x18;
-                    XMA_NumSamples = readerb.ReadUInt32();
-                }
-                else
-                {
-                    readerb.BaseStream.Position = 0x80C + 0x08;
-                    XMA_SampleRate = readerb.ReadUInt32();
-                    readerb.BaseStream.Position = 0x80C + 0x0C;
-                    XMA_NumSamples = readerb.ReadUInt32();
-                }
-                readerb.BaseStream.Position = 0x80C + XMA_ChunkSize + XMA_SeekSize;
-            }
             Data = reader.ReadBytes((int)(length - reader.BaseStream.Position));
 
             if (Name.Contains(NameCheck1))
             {
                 int pos = Name.IndexOf(NameCheck1) + NameCheck1.Length;
-                ShortName = Name.Substring(pos).Split('.')[0].TrimEnd('\0');
+                ShortName = Name.Substring(pos).Split('.')[0].TrimEnd('\0').Replace("*","");
             }
             else if (Name.Contains(NameCheck2))
             {
                 int pos = Name.IndexOf(NameCheck2) + NameCheck2.Length;
-                ShortName = Name.Substring(pos).Split('.')[0].TrimEnd('\0');
+                ShortName = Name.Substring(pos).Split('.')[0].TrimEnd('\0').Replace("*","");
             }
             else
             {
@@ -140,6 +113,7 @@ namespace Pure3D
             lines.AppendLine($"Name: {Name.TrimEnd('\0')}");
             lines.AppendLine($"AutoName: {ShortName}");
             lines.AppendLine($"Desc: {Desc.TrimEnd('\0')}");
+            //lines.AppendLine(Data.ToLine());
             return lines.ToString();
         }
     }

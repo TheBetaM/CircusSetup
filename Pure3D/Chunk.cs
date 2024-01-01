@@ -18,6 +18,7 @@ namespace Pure3D
         public uint headerSize;
         public uint chunkSize;
         public long chunkEnd;
+        public bool FailedToLoad;
 
         public bool IsRoot
         {
@@ -88,7 +89,7 @@ namespace Pure3D
                 chunk.Parent = this;
                 Children.Add(chunk);
 
-                chunk.Read(reader, true, chunkEnd);
+                chunk.Read(reader, chunkEnd);
             }
         }
 
@@ -105,7 +106,7 @@ namespace Pure3D
             }
         }
 
-        public void Read(BinaryReader reader, bool readChildren, long parentChunkEnd)
+        public void Read(BinaryReader reader, long parentChunkEnd)
         {
             chunkStart = reader.BaseStream.Position - 4;
             headerSize = reader.ReadUInt32();
@@ -115,23 +116,30 @@ namespace Pure3D
             if (headerSize > chunkSize)
                 throw new Exception($"Header size {headerSize} greater then chunk size {chunkSize}.");
 
-            if (!readChildren)
-                headerSize = chunkSize;
-
             if ((reader.BaseStream.Position + chunkSize - 12) > parentChunkEnd)
                 throw new Exception("Chunk size too high.");
 
             chunkEnd = chunkStart + chunkSize;
 
-            ReadHeader(reader, headerSize - 12);
-
-            //Debug.WriteLine(this.ToString());
-
-            if (readChildren)
+            try
+            {
+                ReadHeader(reader, headerSize - 12);
                 ReadChildren(reader);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Chunk read error: {ex.Message}");
+                FailedToLoad = true;
+                reader.BaseStream.Position = chunkEnd;
+            }
 
             if (reader.BaseStream.Position != chunkEnd)
-                throw new Exception($"Stream position expected {chunkEnd} but is {reader.BaseStream.Position}");
+            {
+                //throw new Exception($"Stream position expected {chunkEnd} but is {reader.BaseStream.Position}");
+                Console.WriteLine($"Chunk read error: Stream position expected {chunkEnd:X8} but is {reader.BaseStream.Position:X8}");
+                FailedToLoad = true;
+                reader.BaseStream.Position = chunkEnd;
+            }
         }
 
         public abstract void ReadHeader(BinaryReader reader, long length);

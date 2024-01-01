@@ -69,10 +69,16 @@ namespace CircusSetup
                 int adh = (input[i+2] & 0xF0) >> 4;
                 short l = SampleToPCM(adl, factor, predict, ref s0, ref s1);
                 short h = SampleToPCM(adh, factor, predict, ref s0, ref s1);
-                BitConv.ToInt16(o, i * 4 + 0, l);
-                BitConv.ToInt16(o, i * 4 + 2, h);
+                BitConvToInt16(o, i * 4 + 0, l);
+                BitConvToInt16(o, i * 4 + 2, h);
             }
             return o;
+        }
+
+        public static void BitConvToInt16(byte[] arr, int off, short value)
+        {
+            arr[off] = (byte)(value & 0xFF);
+            arr[off + 1] = (byte)((value >> 8) & 0xFF);
         }
 
         public static byte[] ToPCMMono(byte[] data, int size)
@@ -133,7 +139,7 @@ namespace CircusSetup
             return pcm_data.ToArray();
         }
 
-        public static byte[] ToPCMQuad(byte[] data, int size, int interleave)
+        public static byte[] ToPCMQuad(byte[] data, int size, int interleave, bool SecondChannelsOnly)
         {
             if ((size % 32) != 0)
                 throw new ArgumentException("Stereo sample size is not a multiple of 32.");
@@ -143,13 +149,14 @@ namespace CircusSetup
                 throw new ArgumentOutOfRangeException("interleave");
             size /= 32;
             interleave /= 16;
-            double s0_l = 0, s1_l = 0, s2_l = 0, s3_l = 0;
-            double s0_r = 0, s1_r = 0, s2_r = 0, s3_r = 0;
+            double s0_l = 0, s1_l = 0;
+            double s0_r = 0, s1_r = 0;
             List<byte> pcm_data = new List<byte>();
             int interleave_adv = 0;
-            bool pair = false;
             for (int i = 0; i < size; ++i)
             {
+                if (SecondChannelsOnly)
+                    i += 2;
                 if ((i % interleave) == 0)
                     ++interleave_adv;
                 byte[] line_l = new byte[16];
@@ -158,33 +165,19 @@ namespace CircusSetup
                 Array.Copy(data, (i + interleave * interleave_adv) * 16, line_r, 0, 16);
                 if (line_l[1] == 7 || line_r[1] == 7)
                     break;
-                if (pair)
+                var l = LineToPCM(line_l, ref s0_l, ref s1_l);
+                var r = LineToPCM(line_r, ref s0_r, ref s1_r);
+                for (int j = 0; j < 28; ++j)
                 {
-                    var l = LineToPCM(line_l, ref s2_l, ref s3_l);
-                    var r = LineToPCM(line_r, ref s2_r, ref s3_r);
-                    for (int j = 0; j < 28; ++j)
-                    {
-                        pcm_data.Add(l[0 + j * 2]);
-                        pcm_data.Add(l[1 + j * 2]);
-                        pcm_data.Add(r[0 + j * 2]);
-                        pcm_data.Add(r[1 + j * 2]);
-                    }
+                    pcm_data.Add(l[0 + j * 2]);
+                    pcm_data.Add(l[1 + j * 2]);
+                    pcm_data.Add(r[0 + j * 2]);
+                    pcm_data.Add(r[1 + j * 2]);
                 }
-                else
-                {
-                    var l = LineToPCM(line_l, ref s0_l, ref s1_l);
-                    var r = LineToPCM(line_r, ref s0_r, ref s1_r);
-                    for (int j = 0; j < 28; ++j)
-                    {
-                        pcm_data.Add(l[0 + j * 2]);
-                        pcm_data.Add(l[1 + j * 2]);
-                        pcm_data.Add(r[0 + j * 2]);
-                        pcm_data.Add(r[1 + j * 2]);
-                    }
-                }
-                pair = !pair;
                 if (line_l[1] == 1 || line_r[1] == 1)
                     break;
+                if (!SecondChannelsOnly)
+                    i += 2;
             }
             return pcm_data.ToArray();
         }

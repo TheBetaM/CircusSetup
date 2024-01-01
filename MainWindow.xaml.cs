@@ -81,36 +81,44 @@ namespace CircusSetup
 
         void LoadFile()
         {
-            if (!ModeRCF)
+            try
             {
-                if (!ModeRSD)
+                if (!ModeRCF)
                 {
-                    if (!ModeScript)
+                    if (!ModeRSD)
                     {
-                        P3D = new Pure3D.File();
-                        P3D.Load(fileName);
-                        LoadTree();
+                        if (!ModeScript)
+                        {
+                            P3D = new Pure3D.File();
+                            P3D.Load(fileName);
+                            LoadTree();
+                        }
+                        else
+                        {
+                            CircusSetup.Script.ScriptParser parser = new ScriptParser();
+                            parser.Load(fileName);
+                            ScriptFile = parser.script;
+                            LoadTreeScript();
+                        }
                     }
                     else
                     {
-                        CircusSetup.Script.ScriptParser parser = new ScriptParser();
-                        parser.Load(fileName);
-                        ScriptFile = parser.script;
-                        LoadTreeScript();
+                        RSD = new RSD();
+                        RSD.Load(fileName);
+                        LoadTreeRSD();
                     }
                 }
                 else
                 {
-                    RSD = new RSD();
-                    RSD.Load(fileName);
-                    LoadTreeRSD();
+                    CementFile = new RCF();
+                    CementFile.OpenRCF(fileName);
+                    LoadTreeRCF();
                 }
+                statusText.Text = $"P3D loaded.";
             }
-            else
+            catch (Exception ex)
             {
-                CementFile = new RCF();
-                CementFile.OpenRCF(fileName);
-                LoadTreeRCF();
+                statusText.Text = $"Failed to load P3D: {ex.Message}";
             }
         }
 
@@ -191,20 +199,20 @@ namespace CircusSetup
             lines.Append(chunk.ToDetails());
             textBox.Text = lines.ToString();
 
-            byte[] imagedata = chunk.OnImagePreview();
-            if (imagedata != null)
+            try
             {
-                try
+                byte[] imagedata = chunk.OnImagePreview();
+                if (imagedata != null)
                 {
                     using (System.IO.MemoryStream stream = new(imagedata)){
                         previewImage.Source = BitmapFrame.Create(stream,
                             BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                     }
                 }
-                catch (Exception ex)
-                {
-                    statusText.Text = $"Failed to load image: {ex.Message}";
-                }
+            }
+            catch (Exception ex)
+            {
+                statusText.Text = $"Failed to load image: {ex.Message}";
             }
         }
 
@@ -227,6 +235,10 @@ namespace CircusSetup
             TreeViewItem ChunkNode = new TreeViewItem();
             ChunkNode.Tag = RootChunk;
             ChunkNode.Header = RootChunk.ToString();
+            if (RootChunk.FailedToLoad)
+            {
+                ChunkNode.Foreground = Brushes.Red;
+            }
             Root.Items.Add(ChunkNode);
             foreach (Chunk chunk in RootChunk.Children)
             {
@@ -283,41 +295,82 @@ namespace CircusSetup
                         if (!Util.ExportToGodot)
                         {
                             byte[] SoundData = new byte[0];
+                            byte[] SoundData2 = new byte[0];
+                            bool FourChannel = RSD.Channels == 4;
+                            string name1 = sfd2.FileName;
+                            string name2 = sfd2.FileName.Replace(".wav", "_amb.wav");
+                            short channels = (short)RSD.Channels;
+                            if (FourChannel)
+                            {
+                                channels = 2;
+                            }
                             switch (RSD.CodecString)
                             {
                                 case "XADP": // XBOX IMA ADPCM
-                                    SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels);
+                                    SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, false);
+                                    if (FourChannel)
+                                    {
+                                        SoundData2 = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, true);
+                                    }
                                     break;
-                                case "XMA ": // XBOX 360 XMA todo
+                                case "XMA ": // XBOX 360 XMA 
+                                    SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, false);
+                                    if (FourChannel)
+                                    {
+                                        SoundData2 = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, true);
+                                    }
                                     break;
                                 case "VAG ": // PS2/PSP VAG ADPCM
-                                    if (RSD.Channels == 4) // broken
-                                        SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave);
+                                    if (RSD.Channels == 4)
+                                    {
+                                        SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, false);
+                                        SoundData2 = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, true);
+                                    }
                                     else if (RSD.Channels == 2)
                                         SoundData = ADPCM.ToPCMStereo(RSD.Data, RSD.Data.Length, (int)RSD.Interleave);
                                     else if (RSD.Channels == 1)
                                         SoundData = ADPCM.ToPCMMono(RSD.Data, RSD.Data.Length);
                                     break;
-                                case "AT3+": // PSP ATRAC3+ todo
+                                case "AT3+": // PSP ATRAC3+
+                                    SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, false);
+                                    if (FourChannel)
+                                    {
+                                        SoundData2 = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, true);
+                                    }
                                     break;
                                 default:
                                     break;
                             }
-                            SoundData = RIFF.SaveRiff(SoundData, (short)RSD.Channels, (int)RSD.SampleRate);
-                            FileStream file = new FileStream(sfd2.FileName, FileMode.Create, FileAccess.Write);
+                            SoundData = RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
+                            FileStream file = new FileStream(name1, FileMode.Create, FileAccess.Write);
                             BinaryWriter writer = new BinaryWriter(file);
                             writer.Write(SoundData);
                             writer.Close();
+                            if (FourChannel)
+                            {
+                                SoundData2 = RIFF.SaveRiff(SoundData2, channels, (int)RSD.SampleRate);
+                                FileStream file2 = new FileStream(name2, FileMode.Create, FileAccess.Write);
+                                BinaryWriter writer2 = new BinaryWriter(file2);
+                                writer2.Write(SoundData2);
+                                writer2.Close();
+                            }
                         }
                         else
                         {
-                            GodotBinaryAudioStreamWAV wav = new GodotBinaryAudioStreamWAV(RSD, false);
-                            //wav.WriteToFile(sfd2.FileName);
                             string outPath = System.IO.Path.GetDirectoryName(sfd2.FileName) + "\\Sounds\\";
                             outPath += RSD.ShortName + ".res";
                             string dirPath = System.IO.Path.GetDirectoryName(outPath);
                             Directory.CreateDirectory(dirPath);
-                            wav.WriteToFile(outPath);
+
+                            GodotBinaryAudioStreamWAV wav1 = new GodotBinaryAudioStreamWAV(RSD, false, false);
+                            bool FourChannel = RSD.Channels == 4;
+                            string name2 = outPath.Replace(".res", "_amb.res");
+                            wav1.WriteToFile(outPath);
+                            if (FourChannel)
+                            {
+                                GodotBinaryAudioStreamWAV wav2 = new GodotBinaryAudioStreamWAV(RSD, false, true);
+                                wav2.WriteToFile(name2);
+                            }
                         }
                     }
                 }

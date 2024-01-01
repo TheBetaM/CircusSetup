@@ -1,24 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using Pure3D;
 using Pure3D.Chunks;
 
 namespace Pure3D.Chunks
 {
-    [ChunkType(0x15A00)]
-    public class ParticleUnk1 : Chunk
+    [ChunkType(0x15B00)]
+    public class ParticlePointGenerator : Chunk
     {
         public uint UnkInt1;
         public float UnkFloat1;
         public float UnkFloat2;
         public float UnkFloat3;
-        public float UnkFloat4;
-        public float UnkFloat5;
-        public float UnkFloat6;
-        public float UnkFloat7;
-        public float UnkFloat8;
-        public ParticleUnk1(File file, uint type) : base(file, type)
+        public ParticlePointGenerator(File file, uint type) : base(file, type)
         {
 
         }
@@ -29,21 +24,19 @@ namespace Pure3D.Chunks
             UnkFloat1 = reader.ReadSingle();
             UnkFloat2 = reader.ReadSingle();
             UnkFloat3 = reader.ReadSingle();
-            UnkFloat4 = reader.ReadSingle();
-            UnkFloat5 = reader.ReadSingle();
-            UnkFloat6 = reader.ReadSingle();
-            UnkFloat7 = reader.ReadSingle();
-            UnkFloat8 = reader.ReadSingle();
         }
 
         public override void WriteHeader(BinaryWriter writer)
         {
-            throw new NotImplementedException();
+            writer.Write(UnkInt1);
+            writer.Write(UnkFloat1);
+            writer.Write(UnkFloat2);
+            writer.Write(UnkFloat3);
         }
 
         public override string ToString()
         {
-            return $"Particle Unk1";
+            return $"Particle Point Generator";
         }
     }
 }

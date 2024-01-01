@@ -31,7 +31,7 @@ namespace IMA_ADPCM
 
         // Credit to https://github.com/eurotools/es-xbox-adpcm-tool
         // Modified to support stereo and fix quality issue
-        public static byte[] Decode(byte[] ImaFileData, int channels)
+        public static byte[] Decode(byte[] ImaFileData, int channels, bool SecondChannelsOnly)
         {
             byte[] outBuff;
             int sign;               /* Current adpcm sign bit */
@@ -367,22 +367,51 @@ namespace IMA_ADPCM
                         }
                     }
 
-                    for (int i = 0; i < vals1.Count; i++)
+                    if (channels != 4)
                     {
-                        pcmWriter.Write(vals1[i]);
-                        if (vals2.Count != 0)
+                        for (int i = 0; i < vals1.Count; i++)
                         {
-                            pcmWriter.Write(vals2[i]);
-                        }
-                        if (vals3.Count != 0)
-                        {
-                            pcmWriter.Write(vals3[i]);
-                        }
-                        if (vals4.Count != 0)
-                        {
-                            pcmWriter.Write(vals4[i]);
+                            pcmWriter.Write(vals1[i]);
+                            if (vals2.Count != 0)
+                            {
+                                pcmWriter.Write(vals2[i]);
+                            }
+                            if (vals3.Count != 0)
+                            {
+                                pcmWriter.Write(vals3[i]);
+                            }
+                            if (vals4.Count != 0)
+                            {
+                                pcmWriter.Write(vals4[i]);
+                            }
                         }
                     }
+                    else
+                    {
+                        for (int i = 0; i < vals1.Count; i++)
+                        {
+                            if (SecondChannelsOnly)
+                            {
+                                if (vals3.Count != 0)
+                                {
+                                    pcmWriter.Write(vals3[i]);
+                                }
+                                if (vals4.Count != 0)
+                                {
+                                    pcmWriter.Write(vals4[i]);
+                                }
+                            }
+                            else
+                            {
+                                pcmWriter.Write(vals1[i]);
+                                if (vals2.Count != 0)
+                                {
+                                    pcmWriter.Write(vals2[i]);
+                                }
+                            }
+                        }
+                    }
+
                 }
                 outBuff = pcmStream.ToArray();
 

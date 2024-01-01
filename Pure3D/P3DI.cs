@@ -99,10 +99,23 @@ namespace Pure3D
                 case 14:
                     {
                         // PS2 4bit/8bit
+                        bool IsSwizzled = false;
+                        if (Bpp == 8)
+                        {
+                            if ((Width == 256 || Width == 128) && Height >= 64) IsSwizzled = true;
+                            if (Width == 512 && Height != 512 && Height >= 64) IsSwizzled = true;
+                            if (Width == Height && Width >= 16) IsSwizzled = true;
+                        }
+                        else
+                        {
+                            if (Width == 64 && Height >= 32 && Height <= 128) IsSwizzled = true;
+                            if (Width == 128 && Height >= 128) IsSwizzled = true;
+                            if (Width == Height && Width >= 32) IsSwizzled = true;
+                        }
                         Colors.Add(palette[0]);
                         var ColorPal = palette.ToArray();
-                        int textureBufferWidth = 4;
-                        int dbw = 2;
+                        int dbw = Width / 128;
+                        int textureBufferWidth = Width / 64;
                         int rrw = Width / 2;
                         int rrh = Height / 2;
                         EzSwizzle ez = new EzSwizzle();
@@ -112,34 +125,19 @@ namespace Pure3D
 
                         if (Bpp == 4)
                         {
-                            /*
-                            List<byte> Bpp4Ind = new List<byte>();
-                            for (int i = 0; i < ImageSize; i++)
+                            rrw = Width / 2;
+                            rrh = Height / 4;
+
+                            if (IsSwizzled)
                             {
-                                // 4 bit indexing
-                                byte pack = RawData[i];
-                                byte ind1 = (byte)(pack & 0x0F);
-                                byte ind2 = (byte)(pack >> 4);
-                                Bpp4Ind.Add((byte)(ind1 * 16));
-                                Bpp4Ind.Add((byte)(ind2 * 16));
+                                //ez.writeTexPSMCT16(0, dbw, 0, 0, rrw, rrh, imageData);
+                                ez.writeTexPSMCT32(0, dbw, 0, 0, rrw, rrh, imageData);
+                                ez.readTexPSMT4_mod(0, textureBufferWidth, 0, 0, Width, Height, ref texData);
                             }
-                            imageData = Bpp4Ind.ToArray();
-                            */
-                            
-                            //ez.writeTexPSMCT16(0, dbw, 0, 0, rrw, rrh, imageData);
-                            ez.writeTexPSMCT16(0, dbw, 0, 0, rrw, rrh, imageData);
-                            ez.readTexPSMT4(0, textureBufferWidth, 0, 0, Width, Height, ref texData);
-                            /*
-                            Flip(ref texData, Width, Height);
-                            for (var i = 0; i < Width * Height; ++i)
+                            else
                             {
-                                byte pack = (byte)(texData[i] / 16);
-                                RawColors[(i * 4) + 0] = ColorPal[pack].R;
-                                RawColors[(i * 4) + 1] = ColorPal[pack].G;
-                                RawColors[(i * 4) + 2] = ColorPal[pack].B;
-                                RawColors[(i * 4) + 3] = (byte)Math.Clamp(ColorPal[pack].A * 2, 0, 255);
+                                texData = imageData;
                             }
-                            */
 
                             var indData = new List<byte>();
                             for (int i = 0; i < ImageSize; i++)
@@ -162,8 +160,15 @@ namespace Pure3D
                         }
                         else if (Bpp == 8)
                         {
-                            ez.writeTexPSMCT32(0, dbw, 0, 0, rrw, rrh, imageData);
-                            ez.readTexPSMT8(0, textureBufferWidth, 0, 0, Width, Height, ref texData);
+                            if (IsSwizzled)
+                            {
+                                ez.writeTexPSMCT32(0, dbw, 0, 0, rrw, rrh, imageData);
+                                ez.readTexPSMT8(0, textureBufferWidth, 0, 0, Width, Height, ref texData);
+                            }
+                            else
+                            {
+                                texData = imageData;
+                            }
                             SwapPalette(ref ColorPal);
                             Flip(ref texData, Width, Height);
                             for (var i = 0; i < Width * Height; ++i)

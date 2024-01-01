@@ -77,7 +77,7 @@ namespace Pure3D.Chunks
             Dictionary<string, (int, Shader)> shaders = new();
             foreach (var item in Children)
             {
-                if (item is PrimitiveGroupCTTR prim)
+                if (item is PrimitiveGroup prim)
                 {
                     if (!string.IsNullOrEmpty(prim.ShaderName))
                     {

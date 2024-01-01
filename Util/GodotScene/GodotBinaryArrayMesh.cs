@@ -30,10 +30,10 @@ namespace CircusSetup
             var res = new Resource(ResType, $"local://{ResType}_aaaaa");
             var surfArray = new List<object>();
 
-            List<PrimitiveGroupCTTR> prims = new List<PrimitiveGroupCTTR>();
+            List<PrimitiveGroup> prims = new List<PrimitiveGroup>();
             foreach (var item in Model.Children)
             {
-                if (item is PrimitiveGroupCTTR prim)
+                if (item is PrimitiveGroup prim)
                 {
                     prims.Add(prim);
                 }
@@ -77,7 +77,7 @@ namespace CircusSetup
                 float MinZ = 99999f;
                 float MaxZ = -99999f;
 
-                PrimitiveGroupCTTR Sub = prims[i];
+                PrimitiveGroup Sub = prims[i];
                 var primType = Sub.PrimitiveType;
                 var inds = Sub.GetChild<IndexList>();
                 var poslist = Sub.GetChild<PositionList>();
@@ -89,14 +89,15 @@ namespace CircusSetup
                 var wgtlist = Sub.GetChild<WeightList>();
                 var tanlist = Sub.GetChild<TangentList>();
                 var natlist = Sub.GetChild<NativeVertexList>();
+                var natindlist = Sub.GetChild<NativeIndexList>();
 
                 vertex_count = (int)Sub.NumVertices;
                 int primCount = 3;
-                if (primType == PrimitiveGroupCTTR.PrimitiveTypes.Points)
+                if (primType == PrimitiveGroup.PrimitiveTypes.Points)
                 {
                     primCount = 1;
                 }
-                else if (primType == PrimitiveGroupCTTR.PrimitiveTypes.LineList || primType == PrimitiveGroupCTTR.PrimitiveTypes.LineStrip)
+                else if (primType == PrimitiveGroup.PrimitiveTypes.LineList || primType == PrimitiveGroup.PrimitiveTypes.LineStrip)
                 {
                     primCount = 2;
                 }
@@ -105,10 +106,14 @@ namespace CircusSetup
                 {
                     rest = primCount - (int)(Sub.NumVertices % primCount);
                 }
+                if (Sub.NumIndices == 0)
+                {
+                    rest = 0;
+                }
 
                 if (Sub.HasPositions) format |= (int)ArrayFormatFlags.Vertex;
                 if (Sub.HasColors) format |= (int)ArrayFormatFlags.Color;
-                if (Sub.UVCount != PrimitiveGroupCTTR.VertexUVCount.UVx0) format |= (int)ArrayFormatFlags.UV;
+                if (Sub.UVCount != PrimitiveGroup.VertexUVCount.UVx0) format |= (int)ArrayFormatFlags.UV;
                 if (Sub.HasBoneIndices) format |= (int)ArrayFormatFlags.Bones;
                 if (Sub.HasWeights) format |= (int)ArrayFormatFlags.Weights;
                 if (Sub.HasNormals) format |= (int)ArrayFormatFlags.Normal;
@@ -228,7 +233,7 @@ namespace CircusSetup
                             AttributeData.Add(B);
                             AttributeData.Add(A);
                         }
-                        if (Sub.UVCount != PrimitiveGroupCTTR.VertexUVCount.UVx0)
+                        if (Sub.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
                         {
                             byte[] UV_X = BitConverter.GetBytes(vert.U);
                             byte[] UV_Y = BitConverter.GetBytes(-vert.V);
@@ -243,10 +248,10 @@ namespace CircusSetup
                             byte[] Bone4 = new byte[2] { 0x00, 0x00 };
                             if (matpal != null)
                             {
-                                var ind1 = matpal.Matrices[vert.Joint.JointIndex4];
-                                var ind2 = matpal.Matrices[vert.Joint.JointIndex3];
-                                var ind3 = matpal.Matrices[vert.Joint.JointIndex2];
-                                var ind4 = matpal.Matrices[vert.Joint.JointIndex1];
+                                var ind1 = matpal.Matrices[vert.JointIndexes[0]];
+                                var ind2 = matpal.Matrices[vert.JointIndexes[1]];
+                                var ind3 = matpal.Matrices[vert.JointIndexes[2]];
+                                var ind4 = matpal.Matrices[vert.JointIndexes[3]];
                                 Bone1 = BitConverter.GetBytes((ushort)ind1);
                                 Bone2 = BitConverter.GetBytes((ushort)ind2);
                                 Bone3 = BitConverter.GetBytes((ushort)ind3);
@@ -254,10 +259,10 @@ namespace CircusSetup
                             }
                             else
                             {
-                                Bone1 = BitConverter.GetBytes((ushort)vert.Joint.JointIndex1);
-                                Bone2 = BitConverter.GetBytes((ushort)vert.Joint.JointIndex2);
-                                Bone3 = BitConverter.GetBytes((ushort)vert.Joint.JointIndex3);
-                                Bone4 = BitConverter.GetBytes((ushort)vert.Joint.JointIndex4);
+                                Bone1 = BitConverter.GetBytes((ushort)vert.JointIndexes[0]);
+                                Bone2 = BitConverter.GetBytes((ushort)vert.JointIndexes[1]);
+                                Bone3 = BitConverter.GetBytes((ushort)vert.JointIndexes[2]);
+                                Bone4 = BitConverter.GetBytes((ushort)vert.JointIndexes[3]);
                             }
                             SkinData.AddRange(Bone1);
                             SkinData.AddRange(Bone2);
@@ -266,17 +271,18 @@ namespace CircusSetup
                         }
                         if (Sub.HasWeights)
                         {
-                            ushort ConvWeight1 = (ushort)(vert.Joint.Weight1 * 65535);
-                            ushort ConvWeight2 = (ushort)(vert.Joint.Weight2 * 65535);
-                            ushort ConvWeight3 = (ushort)(vert.Joint.Weight3 * 65535);
+                            ushort ConvWeight1 = (ushort)(vert.Weights[0] * 65535);
+                            ushort ConvWeight2 = (ushort)(vert.Weights[1] * 65535);
+                            ushort ConvWeight3 = (ushort)(vert.Weights[2] * 65535);
+                            ushort ConvWeight4 = (ushort)(vert.Weights[3] * 65535);
                             byte[] Weight1 = BitConverter.GetBytes(ConvWeight1);
                             byte[] Weight2 = BitConverter.GetBytes(ConvWeight2);
                             byte[] Weight3 = BitConverter.GetBytes(ConvWeight3);
+                            byte[] Weight4 = BitConverter.GetBytes(ConvWeight4);
                             SkinData.AddRange(Weight1);
                             SkinData.AddRange(Weight2);
                             SkinData.AddRange(Weight3);
-                            SkinData.Add(0);
-                            SkinData.Add(0);
+                            SkinData.AddRange(Weight4);
                         }
                     }
                 }
@@ -301,7 +307,7 @@ namespace CircusSetup
                             AttributeData.Add(0);
                             AttributeData.Add(0);
                         }
-                        if (uvlist != null || Sub.UVCount != PrimitiveGroupCTTR.VertexUVCount.UVx0)
+                        if (uvlist != null || Sub.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
                         {
                             byte[] UV_X = BitConverter.GetBytes(0f);
                             byte[] UV_Y = BitConverter.GetBytes(0f);
@@ -558,6 +564,17 @@ namespace CircusSetup
                     
                     format |= (int)ArrayFormatFlags.Index;
                 }
+                if (natindlist != null && natindlist.Indices.Count != 0)
+                {
+                    for (int d = 0; d < natindlist.Indices.Count; d++)
+                    {
+                        byte[] id = BitConverter.GetBytes((ushort)natindlist.Indices[d]);
+                        IndexData.AddRange(id);
+                    }
+                    index_count = natindlist.Indices.Count;
+                    
+                    format |= (int)ArrayFormatFlags.Index;
+                }
 
                 MinX -= 0.1f;
                 MaxX += 0.1f;
@@ -585,19 +602,19 @@ namespace CircusSetup
                 switch (primType)
                 {
                     default:
-                    case PrimitiveGroupCTTR.PrimitiveTypes.Points:
+                    case PrimitiveGroup.PrimitiveTypes.Points:
                         primTypeVal = 0;
                         break;
-                    case PrimitiveGroupCTTR.PrimitiveTypes.LineList:
+                    case PrimitiveGroup.PrimitiveTypes.LineList:
                         primTypeVal = 1;
                         break;
-                    case PrimitiveGroupCTTR.PrimitiveTypes.LineStrip:
+                    case PrimitiveGroup.PrimitiveTypes.LineStrip:
                         primTypeVal = 2;
                         break;
-                    case PrimitiveGroupCTTR.PrimitiveTypes.TriangleList:
+                    case PrimitiveGroup.PrimitiveTypes.TriangleList:
                         primTypeVal = 3;
                         break;
-                    case PrimitiveGroupCTTR.PrimitiveTypes.TriangleStrip:
+                    case PrimitiveGroup.PrimitiveTypes.TriangleStrip:
                         primTypeVal = 4;
                         break;
                 }

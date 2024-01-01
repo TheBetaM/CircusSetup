@@ -40,10 +40,12 @@ namespace Pure3D
 
             if (fileType == FileTypes.RZ)
             {
+                Console.WriteLine("RZ Pure3D not supported.");
                 throw new Exception("RZ Pure3D not supported.");
             }
             if (fileType == FileTypes.CompressedPure3D)
             {
+                Console.WriteLine("Compressed Pure3D not supported.");
                 throw new Exception("Compressed Pure3D not supported.");
             }
             if (fileType == FileTypes.Pure3DBE)
@@ -52,7 +54,7 @@ namespace Pure3D
                 reader = bigEnd;
             }
 
-            RootChunk.Read(reader, true, reader.BaseStream.Length);
+            RootChunk.Read(reader, reader.BaseStream.Length);
         }
 
         public void Save(string path)

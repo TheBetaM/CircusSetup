@@ -17,7 +17,7 @@ namespace Pure3D.Chunks
         public int UnkParam;
         public int VifSize;
         bool HasComprPos;
-        public uint PSP_MeshType;
+        uint PSP_MeshType;
 
         public NativeVertexList(File file, uint type) : base(file, type)
         {
@@ -37,8 +37,8 @@ namespace Pure3D.Chunks
             Lines.AppendLine($"Header: 0x{Version:X8}");
             Lines.AppendLine($"Param: 0x{UnkParam:X8}");
             Lines.AppendLine($"VifSize: 0x{VifSize:X8}");
-            Lines.AppendLine($"Compressed Positions: {HasComprPos}");
-            Lines.AppendLine($"Native Mesh Type: 0x{PSP_MeshType:X8}");
+            Lines.AppendLine($"PSP Compressed Positions: {HasComprPos}");
+            Lines.AppendLine($"PSP Native Mesh Type: 0x{PSP_MeshType:X8}");
             Lines.AppendLine($"Length: {Data.Length}");
             Lines.AppendLine(Data.ToLine());
 
@@ -47,13 +47,18 @@ namespace Pure3D.Chunks
 
         public override void ReadHeader(BinaryReader reader, long length)
         {
+            /*
+            0x00020001 XBOX (SHAR only)
+            0x00040001 PSP
+            0x00100009 PS2 (SHAR: 0x00100002)
+            0x00030004 GCN/WII
+            */
             Version = reader.ReadInt32();
             UnkParam = reader.ReadInt32();
             VifSize = reader.ReadInt32();
             
-            if (Version == 0x40001)
+            if (Version == 0x00040001) // PSP
             {
-                // PSP
                 /*
                 Data = new byte[0];
                 //var prim = (PrimitiveGroupCTTR)Parent;
@@ -71,14 +76,43 @@ namespace Pure3D.Chunks
                             ReadPSP(preader);
                         }
                         catch {
-                            var prim = (PrimitiveGroupCTTR)Parent;
+                            var prim = (PrimitiveGroup)Parent;
                             var item = (Named)prim.Parent;
-                            Console.WriteLine($"FAILED TO LOAD PSP MODEL! {item.Name} {prim.ShaderName} {File.FullName}");
+                            Console.WriteLine($"FAILED PSP MODEL LONG! {PSP_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
                         }
-                        
+                        if (stream.Position != stream.Length)
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED PSP MODEL SHORT! {PSP_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                        }
                     }
                 }
                 
+            }
+            else if (Version == 0x00020001) // XBOX
+            {
+                Data = reader.ReadBytes((int)length - 12);
+                using (var stream = new MemoryStream(Data))
+                {
+                    using (var preader = new BinaryReader(stream))
+                    {
+                        try {
+                            ReadXBOX(preader);
+                        }
+                        catch {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED XBOX MODEL LONG! {item.Name} {prim.ShaderName}  {File.FullName}");
+                        }
+                        if (stream.Position != stream.Length)
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED XBOX MODEL SHORT! {item.Name} {prim.ShaderName}  {File.FullName}");
+                        }
+                    }
+                }
             }
             else
             {
@@ -91,11 +125,10 @@ namespace Pure3D.Chunks
 
         void ReadPSP(BinaryReader reader)
         {
-            var prim = (PrimitiveGroupCTTR)Parent;
+            var prim = (PrimitiveGroup)Parent;
             var matpal = prim.GetChild<MatrixPalette>();
             uint UnkVal1 = reader.ReadUInt32();
             uint Bitfield = reader.ReadUInt32();
-            PSP_MeshType = Bitfield;
 
             bool HasUnk2 = (Bitfield & (1 << 0)) != 0; // ?
             bool HasUnk0 = (Bitfield & (1 << 1)) != 0; // ?
@@ -108,7 +141,7 @@ namespace Pure3D.Chunks
             bool UncompressedPositions = (Bitfield & (1 << 7)) != 0;
 
             //bool AlwaysTrue = (Bitfield & (1 << 8)) != 0; // always true - pos? uv?
-            bool HasUnk3 = (Bitfield & (1 << 9)) != 0; // ?
+            bool HasFourBoneIndices = (Bitfield & (1 << 9)) != 0; // two minimum?
             //bool Unused2 = (Bitfield & (1 << 10)) != 0;
             bool HasByteIndices = (Bitfield & (1 << 11)) != 0;
 
@@ -117,22 +150,33 @@ namespace Pure3D.Chunks
             bool HasUnk4 = (Bitfield & (1 << 14)) != 0; // ?
             bool HasUnk5 = (Bitfield & (1 << 15)) != 0; // ?
 
-            bool HasBoneIndices = (Bitfield & (1 << 16)) != 0;
+            bool HasEightBoneIndices = (Bitfield & (1 << 16)) != 0;
+
             HasComprPos = !UncompressedPositions;
+            PSP_MeshType = Bitfield;
 
             uint VCount = reader.ReadUInt32();
             uint IndicesCount = 0;
+            uint MatricesCount = prim.NumMatrices;
             if (VCount != prim.NumVertices)
             {
                 VCount = reader.ReadUInt32();
                 IndicesCount = reader.ReadUInt32();
-                reader.ReadBytes(0x20);
+                reader.ReadBytes(0xC);
+                MatricesCount = reader.ReadUInt32();
+                reader.ReadBytes(0x10);
             }
             else
             {
                 IndicesCount = reader.ReadUInt32();
             }
             reader.ReadBytes(0x90);
+
+            uint ExtraPadding = 4 - MatricesCount;
+            if (HasEightBoneIndices)
+            {
+                ExtraPadding = 8 - MatricesCount;
+            }
             
             for (int i = 0; i < VCount; i++)
             {
@@ -140,34 +184,24 @@ namespace Pure3D.Chunks
             }
             for (int i = 0; i < VCount; i++)
             {
-                if (prim.HasWeights)
+                if (HasEightBoneIndices || HasFourBoneIndices)
                 {
-                    //reader.ReadUInt32();
-                    //Vertexes[i].Joint.Weight1 = 1f;
-                    Vertexes[i].Joint.Weight1 = reader.ReadByte() / 255f;
-                    Vertexes[i].Joint.Weight2 = reader.ReadByte() / 255f;
-                    Vertexes[i].Joint.Weight3 = reader.ReadByte() / 255f;
-                    Vertexes[i].Joint.Weight4 = reader.ReadByte() / 255f;
+                    int wpos = 0;
+                    for (int a = 0; a < MatricesCount; a++)
+                    {
+                        byte Wgt = reader.ReadByte();
+                        if (Wgt != 0 && wpos < 4)
+                        {
+                            Vertexes[i].JointIndexes[wpos] = a;
+                            Vertexes[i].Weights[wpos] = Wgt / 128f;
+                            wpos++;
+                        }
+                    }
                 }
-                if (HasBoneIndices)
-                {
-                    reader.ReadUInt32();
-                    Vertexes[i].Joint.JointIndex1 = 0;//reader.ReadByte();
-                    Vertexes[i].Joint.JointIndex2 = 0;//reader.ReadByte();
-                    Vertexes[i].Joint.JointIndex3 = 0;//reader.ReadByte();
-                    Vertexes[i].Joint.JointIndex4 = 0;//reader.ReadByte();
-                }
-                if (prim.UVCount != PrimitiveGroupCTTR.VertexUVCount.UVx0)
+                if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
                 {
                     Vertexes[i].U = reader.ReadInt16() / 32768f;
                     Vertexes[i].V = reader.ReadInt16() / 32768f;
-                }
-                if (HasColors)
-                {
-                    Vertexes[i].R = reader.ReadByte();
-                    Vertexes[i].G = reader.ReadByte();
-                    Vertexes[i].B = reader.ReadByte();
-                    Vertexes[i].A = reader.ReadByte();
                 }
                 if (HasNormals)
                 {
@@ -175,6 +209,20 @@ namespace Pure3D.Chunks
                     Vertexes[i].BNY = reader.ReadByte();
                     Vertexes[i].BNZ = reader.ReadByte();
                     reader.ReadByte();
+                }
+                if (HasEightBoneIndices || HasFourBoneIndices)
+                {
+                    for (int a = 0; a < ExtraPadding; a++)
+                    {
+                        reader.ReadByte();
+                    }
+                }
+                if (HasColors)
+                {
+                    Vertexes[i].R = reader.ReadByte();
+                    Vertexes[i].G = reader.ReadByte();
+                    Vertexes[i].B = reader.ReadByte();
+                    Vertexes[i].A = reader.ReadByte();
                 }
                 if (!UncompressedPositions)
                 {
@@ -209,6 +257,43 @@ namespace Pure3D.Chunks
                 }
             }
             
+        }
+
+        void ReadXBOX(BinaryReader reader)
+        {
+            var prim = (PrimitiveGroup)Parent;
+            for (int i = 0; i < prim.NumVertices; i++)
+            {
+                Vertexes.Add(new VertexData());
+            }
+            for (int i = 0; i < prim.NumVertices; i++)
+            {
+                if (prim.HasNormals)
+                {
+                    Vertexes[i].BNX = reader.ReadByte();
+                    Vertexes[i].BNY = reader.ReadByte();
+                    Vertexes[i].BNZ = reader.ReadByte();
+                    reader.ReadByte();
+                }
+                if (prim.HasPositions)
+                {
+                    Vertexes[i].X = reader.ReadSingle();
+                    Vertexes[i].Y = reader.ReadSingle();
+                    Vertexes[i].Z = reader.ReadSingle();
+                }
+                if (prim.HasColors)
+                {
+                    Vertexes[i].R = reader.ReadByte();
+                    Vertexes[i].G = reader.ReadByte();
+                    Vertexes[i].B = reader.ReadByte();
+                    Vertexes[i].A = reader.ReadByte();
+                }
+                if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
+                {
+                    Vertexes[i].U = reader.ReadSingle();
+                    Vertexes[i].V = reader.ReadSingle();
+                }
+            }
         }
 
         public List<VertexData> CalculateData()
@@ -403,25 +488,14 @@ namespace Pure3D.Chunks
             }
         }
 
-        public class JointInfo
-        {
-            public float Weight1;
-            public float Weight2;
-            public float Weight3;
-            public float Weight4;
-            public int JointIndex1;
-            public int JointIndex2;
-            public int JointIndex3;
-            public int JointIndex4;
-        }
-
         public class VertexData
         {
             public float X, Y, Z;
             public float NX, NY, NZ;
             public float U, V;
             public byte R, G, B, A;
-            public JointInfo Joint = new JointInfo();
+            public float[] Weights = new float[4];
+            public int[] JointIndexes = new int[4];
             public byte ER, EG, EB, EA; // Emit colors
             public bool Conn;
             public byte BNX, BNY, BNZ;

@@ -27,7 +27,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Render Status ({CastShadow})";
+            return $"Render Status: {CastShadow}";
         }
     }
 }
