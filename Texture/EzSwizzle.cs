@@ -553,14 +553,9 @@ namespace Pure3D
 		public byte[] PSP_Swizzle(int inwidth, int height, int bpp, byte[] texData)
         {
             int offset = 0;
-            // Incorperate the bpp into the width
             int width = (inwidth * bpp) >> 3;
-
             byte[] destination = new byte[width * height];
-            //Console.WriteLine("Max: " + destination.Length + " - " + texture.Unswizzled.Length);
-
             int rowblocks = (width / 16);
-
             int magicNumber = 8;
 
             for (int y = 0; y < height; y++) {
@@ -584,13 +579,9 @@ namespace Pure3D
         public byte[] PSP_UnSwizzle(int inwidth, int height, int bpp, byte[] texData) 
         {
             int destinationOffset = 0;
-            // Incorperate the bpp into the width
             int width = (inwidth * bpp) >> 3;
-
             byte[] destination = new byte[width * height];
-
             int rowblocks = (width / 16);
-
             int magicNumber = 8;
 
             for (int y = 0; y < height; y++) {
