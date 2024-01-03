@@ -81,45 +81,50 @@ namespace CircusSetup
 
         void LoadFile()
         {
+            //LoadFileAction();
             try
             {
-                if (!ModeRCF)
+                LoadFileAction();
+            }
+            catch (Exception ex)
+            {
+                statusText.Text = $"Failed to load file: {ex.Message}";
+            }
+        }
+        void LoadFileAction()
+        {
+            if (!ModeRCF)
+            {
+                if (!ModeRSD)
                 {
-                    if (!ModeRSD)
+                    if (!ModeScript)
                     {
-                        if (!ModeScript)
-                        {
-                            P3D = new Pure3D.File();
-                            P3D.Load(fileName);
-                            LoadTree();
-                        }
-                        else
-                        {
-                            CircusSetup.Script.ScriptParser parser = new ScriptParser();
-                            parser.Load(fileName);
-                            ScriptFile = parser.script;
-                            LoadTreeScript();
-                        }
+                        P3D = new Pure3D.File();
+                        P3D.Load(fileName);
+                        LoadTree();
                     }
                     else
                     {
-                        RSD = new RSD();
-                        RSD.Load(fileName);
-                        LoadTreeRSD();
+                        CircusSetup.Script.ScriptParser parser = new ScriptParser();
+                        parser.Load(fileName);
+                        ScriptFile = parser.script;
+                        LoadTreeScript();
                     }
                 }
                 else
                 {
-                    CementFile = new RCF();
-                    CementFile.OpenRCF(fileName);
-                    LoadTreeRCF();
+                    RSD = new RSD();
+                    RSD.Load(fileName);
+                    LoadTreeRSD();
                 }
-                statusText.Text = $"P3D loaded.";
             }
-            catch (Exception ex)
+            else
             {
-                statusText.Text = $"Failed to load P3D: {ex.Message}";
+                CementFile = new RCF();
+                CementFile.OpenRCF(fileName);
+                LoadTreeRCF();
             }
+            statusText.Text = $"P3D loaded.";
         }
 
         private void reloadButton_Click(object sender, RoutedEventArgs e)

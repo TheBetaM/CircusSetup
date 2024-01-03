@@ -130,9 +130,8 @@ namespace Pure3D
 
                             if (IsSwizzled)
                             {
-                                //ez.writeTexPSMCT16(0, dbw, 0, 0, rrw, rrh, imageData);
                                 ez.writeTexPSMCT32(0, dbw, 0, 0, rrw, rrh, imageData);
-                                ez.readTexPSMT4_mod(0, textureBufferWidth, 0, 0, Width, Height, ref texData);
+                                ez.readTexPSMT4_mod(0, textureBufferWidth, 0, 0, Width / 2, Height, ref texData);
                             }
                             else
                             {

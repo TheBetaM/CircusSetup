@@ -121,6 +121,9 @@ namespace Pure3D
 
             chunkEnd = chunkStart + chunkSize;
 
+            //ReadHeader(reader, headerSize - 12);
+            //ReadChildren(reader);
+
             try
             {
                 ReadHeader(reader, headerSize - 12);
@@ -128,7 +131,7 @@ namespace Pure3D
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Chunk read error: {ex.Message}");
+                Console.WriteLine($"{this} Chunk read error: {ex.Message}");
                 FailedToLoad = true;
                 reader.BaseStream.Position = chunkEnd;
             }

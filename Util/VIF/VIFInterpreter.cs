@@ -139,11 +139,11 @@ namespace CircusSetup.VIF
                     }
                     Unpack(tmpStack, vectors, fmt, amount, usn, false, 1, 1, 0);
                     VUMem.Add(vectors);
-                    Console.WriteLine($"UNPACK {((int)packet_length - 1) * 4} bytes into {amount} 128bit vectors using {fmt} format {startPos:X8}");
+                    //Console.WriteLine($"UNPACK {((int)packet_length - 1) * 4} bytes into {amount} 128bit vectors using {fmt} format {startPos:X8}");
                 }
                 else
                 {
-                    Console.WriteLine($"{vif.OP.ToString()} {(reader.BaseStream.Position - 4):X8}");
+                    //Console.WriteLine($"{vif.OP.ToString()} {(reader.BaseStream.Position - 4):X8}");
                     switch (vif.OP)
                     {
                         case VIFCodeEnum.NOP:

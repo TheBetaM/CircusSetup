@@ -10,7 +10,6 @@ namespace Pure3D.Chunks
     [ChunkType(0x10012)]
     public class NativeVertexList : Unknown
     {
-        public byte[] VifCode { get; set; }
         public List<VertexData> Vertexes = new List<VertexData>();
         public List<ushort> Indices = new List<ushort>();
         public int Version;
@@ -117,9 +116,10 @@ namespace Pure3D.Chunks
             else
             {
                 // PS2
-                Data = reader.ReadBytes((int)length - 12);
+                reader.ReadBytes(8);
+                Data = reader.ReadBytes((int)length - 0x14);
                 //VifCode = reader.ReadBytes((int)length - 0x14);
-                //Vertexes = CalculateData();
+                Vertexes = CalculateData(Data);
             }
         }
 
@@ -158,19 +158,30 @@ namespace Pure3D.Chunks
             uint VCount = reader.ReadUInt32();
             uint IndicesCount = 0;
             uint MatricesCount = prim.NumMatrices;
+            float UV_ScaleX = 1f;
+            float UV_ScaleY = 1f;
+            float UV_OffsetX = 0f;
+            float UV_OffsetY = 0f;
             if (VCount != prim.NumVertices)
             {
                 VCount = reader.ReadUInt32();
                 IndicesCount = reader.ReadUInt32();
                 reader.ReadBytes(0xC);
                 MatricesCount = reader.ReadUInt32();
-                reader.ReadBytes(0x10);
+                reader.ReadBytes(0xC);
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
             }
             else
             {
                 IndicesCount = reader.ReadUInt32();
+                reader.ReadSingle();
+                reader.ReadSingle();
+                reader.ReadSingle();
             }
-            reader.ReadBytes(0x90);
+            reader.ReadBytes(0x84);
 
             uint ExtraPadding = 4 - MatricesCount;
             if (HasEightBoneIndices)
@@ -200,8 +211,8 @@ namespace Pure3D.Chunks
                 }
                 if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
                 {
-                    Vertexes[i].U = reader.ReadInt16() / 32768f;
-                    Vertexes[i].V = reader.ReadInt16() / 32768f;
+                    Vertexes[i].U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
+                    Vertexes[i].V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
                 }
                 if (HasNormals)
                 {
@@ -296,7 +307,7 @@ namespace Pure3D.Chunks
             }
         }
 
-        public List<VertexData> CalculateData()
+        public List<VertexData> CalculateData(byte[] VifCode)
         {
             var vertexes = new List<VertexData>();
 
@@ -326,101 +337,81 @@ namespace Pure3D.Chunks
                     switch (addr)
                     {
                         case 0x3:
-                            fieldsPresent |= FieldsPresent.Vertex;
-                            fields++;
-                            break;
-                        case 0x4:
                             fieldsPresent |= FieldsPresent.UVs;
                             fields++;
+
+                            var uv_con = data[i].Where((v) => v != null);
+                            foreach (var e in uv_con)
+                            {
+                                //var conn = (e.GetBinaryX() & 0xFF00) >> 8;
+                                var conn = (e.GetBinaryX() & 0xFF00) >> 4;
+                                Connection.Add(conn == 128 ? false : true);
+
+                                Vector4 uv = new Vector4(e);
+                                if (e.FMT == PackFormat.V2_32)
+                                {
+                                    // V2_32 - no changes, just the UV's as floats, might use last few bits for something?
+                                    uv.Y += -0.02f;
+                                }
+                                else
+                                {
+                                    // V4_16 - X and Y compressed UVs, has normals? colors all black
+                                    short corX = (short)(uv.BX);
+                                    short corY = (short)(uv.BY);
+                                    uv.X = corX / 4095f; // 0xFFF
+                                    uv.Y = corY / 4095f; // 0xFFF
+                                    AltUV = true;
+                                    //uv.Y += -0.03f;
+                                }
+
+                                UVW.Add(uv);
+                            }
+                            
+                            break;
+                        case 0x4:
+                            //fieldsPresent |= FieldsPresent.Color;
+                            //fields++;
+                            // Normals? (V3_32)
+
+                            // 00 00 00 7F
+                            /*
+                            foreach (var e in data[i])
+                            {
+                                if (e == null)
+                                    break;
+                                var r = Math.Min(e.GetBinaryX() & 0xFF, 255);
+                                var g = Math.Min(e.GetBinaryY() & 0xFF, 255);
+                                var b = Math.Min(e.GetBinaryZ() & 0xFF, 255);
+                                var a = (e.GetBinaryW() & 0xFF) << 1;
+
+                                Color col = new Color((byte)r, (byte)g, (byte)b, (byte)a);
+                                if (AltUV)
+                                {
+                                    col = new Color(255, 255, 255, 255);
+                                }
+                                Colors.Add(col);
+                            }
+                            */
+                            /*
+                            foreach (var e in data[i + 4])
+                            {
+                                if (e == null)
+                                    break;
+                                Normals.Add(new Vector4(e.X, e.Y, e.Z, 1.0f));
+                            }
+                            */
                             break;
                         case 0x5:
-                            fieldsPresent |= FieldsPresent.Color;
+                            fieldsPresent |= FieldsPresent.Vertex;
                             fields++;
-                            break;
-                        case 0x6:
-                            fieldsPresent |= FieldsPresent.EmitColors;
-                            fields++;
-                            break;
-                    }
-                    if (i + fields + 2 >= data.Count)
-                        break;
 
-                }
-                Vertexes.AddRange(data[i + 2].Where((v) => v != null));
-                if (fieldsPresent.HasFlag(FieldsPresent.UVs))
-                {
-                    var uv_con = data[i + 3].Where((v) => v != null);
-                    foreach (var e in uv_con)
-                    {
-                        //var conn = (e.GetBinaryX() & 0xFF00) >> 8;
-                        var conn = (e.GetBinaryX() & 0xFF00) >> 4;
-                        Connection.Add(conn == 128 ? false : true);
-
-                        Vector4 uv = new Vector4(e);
-                        if (e.FMT == PackFormat.V2_32)
-                        {
-                            // V2_32 - no changes, just the UV's as floats, might use last few bits for something?
-                            uv.Y += -0.02f;
-                        }
-                        else
-                        {
-                            // V4_16 - X and Y compressed UVs, has normals? colors all black
-                            short corX = (short)(uv.BX);
-                            short corY = (short)(uv.BY);
-                            uv.X = corX / 4095f; // 0xFFF
-                            uv.Y = corY / 4095f; // 0xFFF
-                            AltUV = true;
-                            //uv.Y += -0.03f;
-                        }
-
-                        UVW.Add(uv);
-                    }
-                }
-                if (fieldsPresent.HasFlag(FieldsPresent.Color))
-                {
-                    // 00 00 00 7F
-                    foreach (var e in data[i + 4])
-                    {
-                        if (e == null)
+                            Vertexes.AddRange(data[i].Where((v) => v != null));
                             break;
-                        var r = Math.Min(e.GetBinaryX() & 0xFF, 255);
-                        var g = Math.Min(e.GetBinaryY() & 0xFF, 255);
-                        var b = Math.Min(e.GetBinaryZ() & 0xFF, 255);
-                        var a = (e.GetBinaryW() & 0xFF) << 1;
-
-                        Color col = new Color((byte)r, (byte)g, (byte)b, (byte)a);
-                        if (AltUV)
-                        {
-                            col = new Color(255, 255, 255, 255);
-                        }
-                        Colors.Add(col);
-                    }
-                    /*
-                    foreach (var e in data[i + 4])
-                    {
-                        if (e == null)
+                        default:
                             break;
-                        Normals.Add(new Vector4(e.X, e.Y, e.Z, 1.0f));
                     }
-                    */
+                    i++;
                 }
-                if (fieldsPresent.HasFlag(FieldsPresent.EmitColors))
-                {
-                    // not used?
-                    throw new NotImplementedException();
-                    foreach (var e in data[i + fields + 1])
-                    {
-                        if (e == null)
-                            break;
-                        Vector4 emit = new Vector4(e);
-                        emit.X = (emit.GetBinaryX() & 0xFF);// / 256.0f;
-                        emit.Y = (emit.GetBinaryY() & 0xFF);// / 256.0f;
-                        emit.Z = (emit.GetBinaryZ() & 0xFF);// / 256.0f;
-                        emit.W = (emit.GetBinaryW() & 0xFF);// / 256.0f;
-                        EmitColor.Add(emit);
-                    }
-                }
-                i += fields + 2;
                 TrimList(UVW, Vertexes.Count);
                 TrimList(EmitColor, Vertexes.Count);
                 TrimList(Normals, Vertexes.Count, new Vector4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -435,18 +426,11 @@ namespace Pure3D.Chunks
                     Z = Vertexes[i].Z,
                     U = UVW[i].X,
                     V = UVW[i].Y,
-                    R = Colors[i].R,
-                    G = Colors[i].G,
-                    B = Colors[i].B,
-                    A = Colors[i].A,
-                    NX = Normals[i].X,
-                    NY = Normals[i].Y,
-                    NZ = Normals[i].Z,
-                    ER = (byte)EmitColor[i].X,
-                    EG = (byte)EmitColor[i].Y,
-                    EB = (byte)EmitColor[i].Z,
-                    EA = (byte)EmitColor[i].W,
-                    Conn = Connection[i]
+                    //R = Colors[i].R,
+                    //G = Colors[i].G,
+                    //B = Colors[i].B,
+                    //A = Colors[i].A,
+                    //Conn = Connection[i]
                 };
                 vertexes.Add(vertData);
             }
@@ -496,7 +480,6 @@ namespace Pure3D.Chunks
             public byte R, G, B, A;
             public float[] Weights = new float[4];
             public int[] JointIndexes = new int[4];
-            public byte ER, EG, EB, EA; // Emit colors
             public bool Conn;
             public byte BNX, BNY, BNZ;
         }
