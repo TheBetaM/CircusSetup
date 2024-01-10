@@ -16,7 +16,7 @@ namespace Pure3D.Chunks
         public int UnkParam;
         public int VifSize;
         bool HasComprPos;
-        uint PSP_MeshType;
+        public uint PSP_MeshType;
 
         public NativeVertexList(File file, uint type) : base(file, type)
         {
@@ -130,10 +130,10 @@ namespace Pure3D.Chunks
             uint UnkVal1 = reader.ReadUInt32();
             uint Bitfield = reader.ReadUInt32();
 
-            bool HasUnk2 = (Bitfield & (1 << 0)) != 0; // ?
-            bool HasUnk0 = (Bitfield & (1 << 1)) != 0; // ?
-            bool HasUnk1 = (Bitfield & (1 << 2)) != 0; // ?
-            //bool HasUnk2 = (Bitfield & (1 << 3)) != 0; // always the same as HasUnk1
+            bool HasUnk0 = (Bitfield & (1 << 0)) != 0; // OneByteUV? used only in Titans/MoM
+            //bool HasUnk1 = (Bitfield & (1 << 1)) != 0; // ? disabled only in Titans/MoM, when previous one is enabled
+            bool HasUnk2 = (Bitfield & (1 << 2)) != 0; // ?
+            //bool HasUnk3 = (Bitfield & (1 << 3)) != 0; // always the same as previous one
 
             bool HasColors = (Bitfield & (1 << 4)) != 0;
             bool HasNormals = (Bitfield & (1 << 5)) != 0;
@@ -141,7 +141,7 @@ namespace Pure3D.Chunks
             bool UncompressedPositions = (Bitfield & (1 << 7)) != 0;
 
             //bool AlwaysTrue = (Bitfield & (1 << 8)) != 0; // always true - pos? uv?
-            bool HasFourBoneIndices = (Bitfield & (1 << 9)) != 0; // two minimum?
+            bool HasFourBoneIndices = (Bitfield & (1 << 9)) != 0;
             //bool Unused2 = (Bitfield & (1 << 10)) != 0;
             bool HasByteIndices = (Bitfield & (1 << 11)) != 0;
 
@@ -188,6 +188,10 @@ namespace Pure3D.Chunks
             {
                 ExtraPadding = 8 - MatricesCount;
             }
+            //if (MatricesCount != 4 && MatricesCount != 8)
+            //{
+            //    ExtraPadding--;
+            //}
             
             for (int i = 0; i < VCount; i++)
             {
@@ -208,11 +212,34 @@ namespace Pure3D.Chunks
                             wpos++;
                         }
                     }
+                    //if (MatricesCount != 4 && MatricesCount != 8)
+                    //{
+                    //    reader.ReadByte();
+                    //}
                 }
                 if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
                 {
-                    Vertexes[i].U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
-                    Vertexes[i].V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
+                    if (HasUnk0)
+                    {
+                        Vertexes[i].U = ((reader.ReadByte() / 128f) * UV_ScaleX) + UV_OffsetX;
+                        Vertexes[i].V = ((reader.ReadByte() / 128f) * UV_ScaleY) + UV_OffsetY;
+                        //Vertexes[i].U += reader.ReadByte() / 255f; // offsetX? up to 0xFF
+                        //Vertexes[i].V += reader.ReadByte() / 255f; // offsetY? up to 0xFF
+                        reader.ReadByte();
+                        reader.ReadByte();
+                    }
+                    else
+                    {
+                        Vertexes[i].U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
+                        Vertexes[i].V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
+                    }
+                }
+                if (HasColors)
+                {
+                    Vertexes[i].R = reader.ReadByte();
+                    Vertexes[i].G = reader.ReadByte();
+                    Vertexes[i].B = reader.ReadByte();
+                    Vertexes[i].A = reader.ReadByte();
                 }
                 if (HasNormals)
                 {
@@ -227,13 +254,6 @@ namespace Pure3D.Chunks
                     {
                         reader.ReadByte();
                     }
-                }
-                if (HasColors)
-                {
-                    Vertexes[i].R = reader.ReadByte();
-                    Vertexes[i].G = reader.ReadByte();
-                    Vertexes[i].B = reader.ReadByte();
-                    Vertexes[i].A = reader.ReadByte();
                 }
                 if (!UncompressedPositions)
                 {
@@ -426,6 +446,10 @@ namespace Pure3D.Chunks
                     Z = Vertexes[i].Z,
                     U = UVW[i].X,
                     V = UVW[i].Y,
+                    R = 255,
+                    G = 255,
+                    B = 255,
+                    A = 255,
                     //R = Colors[i].R,
                     //G = Colors[i].G,
                     //B = Colors[i].B,

@@ -44,6 +44,7 @@
                 <!--<MenuItem Name="addAnimButton" Header="_Add To Anim Cache (0)" Click="addAnimButton_Click"></MenuItem>
                 <MenuItem Name="clearAnimButton" Header="_Clear Anim Cache" Click="clearAnimButton_Click"></MenuItem>-->
                 <MenuItem Name="exportToggleButton" Header="_Export In Godot Format ON" Click="exportToggleButton_Click"></MenuItem>
+                <MenuItem Name="demoModeToggleButton" Header="_Is Demo OFF" Click="demoModeToggleButton_Click"></MenuItem>
             </Menu>
             <TabControl Grid.Column="2" Grid.Row="1" Background="DimGray">
                 <TabItem Header="Main">

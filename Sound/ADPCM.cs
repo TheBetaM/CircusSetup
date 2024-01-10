@@ -139,7 +139,7 @@ namespace CircusSetup
             return pcm_data.ToArray();
         }
 
-        public static byte[] ToPCMQuad(byte[] data, int size, int interleave, bool SecondChannelsOnly)
+        public static byte[] ToPCMQuad(byte[] data, int size, int interleave, int channelpair, uint channels)
         {
             if ((size % 32) != 0)
                 throw new ArgumentException("Stereo sample size is not a multiple of 32.");
@@ -155,7 +155,7 @@ namespace CircusSetup
             int interleave_adv = 0;
             for (int i = 0; i < size; ++i)
             {
-                if (SecondChannelsOnly)
+                if (channels == 4 && channelpair == 1)
                     i += 2;
                 if ((i % interleave) == 0)
                     ++interleave_adv;
@@ -176,7 +176,7 @@ namespace CircusSetup
                 }
                 if (line_l[1] == 1 || line_r[1] == 1)
                     break;
-                if (!SecondChannelsOnly)
+                if (channels == 4 && channelpair != 1)
                     i += 2;
             }
             return pcm_data.ToArray();

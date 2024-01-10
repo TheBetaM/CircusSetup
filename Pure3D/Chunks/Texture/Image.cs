@@ -152,7 +152,7 @@ namespace Pure3D.Chunks
                                 if (tex.Colors.Count == 0) return;
                                 var png = PngBuilder.Create((int)Width, (int)Height, true);
                                 int i = 0;
-                                for (int y = (int)Height - 1; y > 0; y--)
+                                for (int y = (int)Height - 1; y >= 0; y--)
                                 {
                                     for (int x = 0; x < Width; x++)
                                     {
@@ -268,7 +268,7 @@ namespace Pure3D.Chunks
                                 if (tex.Colors.Count == 0) return null;
                                 var png = PngBuilder.Create((int)Width, (int)Height, true);
                                 int i = 0;
-                                for (int y = (int)Height - 1; y > 0; y--)
+                                for (int y = (int)Height - 1; y >= 0; y--)
                                 {
                                     for (int x = 0; x < Width; x++)
                                     {

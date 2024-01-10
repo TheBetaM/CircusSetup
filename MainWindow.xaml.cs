@@ -300,36 +300,22 @@ namespace CircusSetup
                         if (!Util.ExportToGodot)
                         {
                             byte[] SoundData = new byte[0];
-                            byte[] SoundData2 = new byte[0];
-                            bool FourChannel = RSD.Channels == 4;
                             string name1 = sfd2.FileName;
-                            string name2 = sfd2.FileName.Replace(".wav", "_amb.wav");
-                            short channels = (short)RSD.Channels;
-                            if (FourChannel)
-                            {
-                                channels = 2;
-                            }
+                            short channels = 1;
+                            if (RSD.Channels > 1) channels = 2;
+                            uint tracks = (RSD.Channels / 2);
                             switch (RSD.CodecString)
                             {
                                 case "XADP": // XBOX IMA ADPCM
-                                    SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, false);
-                                    if (FourChannel)
-                                    {
-                                        SoundData2 = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, true);
-                                    }
+                                    SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
                                     break;
                                 case "XMA ": // XBOX 360 XMA 
-                                    SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, false);
-                                    if (FourChannel)
-                                    {
-                                        SoundData2 = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, true);
-                                    }
+                                    SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
                                     break;
                                 case "VAG ": // PS2/PSP VAG ADPCM
-                                    if (RSD.Channels == 4)
+                                    if (RSD.Channels >= 4)
                                     {
-                                        SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, false);
-                                        SoundData2 = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, true);
+                                        SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, 0, RSD.Channels);
                                     }
                                     else if (RSD.Channels == 2)
                                         SoundData = ADPCM.ToPCMStereo(RSD.Data, RSD.Data.Length, (int)RSD.Interleave);
@@ -337,11 +323,11 @@ namespace CircusSetup
                                         SoundData = ADPCM.ToPCMMono(RSD.Data, RSD.Data.Length);
                                     break;
                                 case "AT3+": // PSP ATRAC3+
-                                    SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, false);
-                                    if (FourChannel)
-                                    {
-                                        SoundData2 = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, true);
-                                    }
+                                    SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
+                                    break;
+                                case "RADP": // GCN/WII IMA ADPCM
+                                    break;
+                                case "WADP": // WII NGC DSP
                                     break;
                                 default:
                                     break;
@@ -351,13 +337,39 @@ namespace CircusSetup
                             BinaryWriter writer = new BinaryWriter(file);
                             writer.Write(SoundData);
                             writer.Close();
-                            if (FourChannel)
+                            
+                            if (tracks > 1 && tracks < 32)
                             {
-                                SoundData2 = RIFF.SaveRiff(SoundData2, channels, (int)RSD.SampleRate);
-                                FileStream file2 = new FileStream(name2, FileMode.Create, FileAccess.Write);
-                                BinaryWriter writer2 = new BinaryWriter(file2);
-                                writer2.Write(SoundData2);
-                                writer2.Close();
+                                for (int t = 1; t < tracks; t++)
+                                {
+                                    string name2 = sfd2.FileName.Replace(".wav", $"_{t}.wav");
+                                    switch (RSD.CodecString)
+                                    {
+                                        case "XADP": // XBOX IMA ADPCM
+                                            SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                            break;
+                                        case "XMA ": // XBOX 360 XMA 
+                                            SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                            break;
+                                        case "VAG ": // PS2/PSP VAG ADPCM
+                                            SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, t, RSD.Channels);
+                                            break;
+                                        case "AT3+": // PSP ATRAC3+
+                                            SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                            break;
+                                        case "RADP": // GCN/WII IMA ADPCM
+                                            break;
+                                        case "WADP": // WII NGC DSP
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    SoundData = RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
+                                    FileStream file2 = new FileStream(name2, FileMode.Create, FileAccess.Write);
+                                    BinaryWriter writer2 = new BinaryWriter(file2);
+                                    writer2.Write(SoundData);
+                                    writer2.Close();
+                                }
                             }
                         }
                         else
@@ -367,14 +379,18 @@ namespace CircusSetup
                             string dirPath = System.IO.Path.GetDirectoryName(outPath);
                             Directory.CreateDirectory(dirPath);
 
-                            GodotBinaryAudioStreamWAV wav1 = new GodotBinaryAudioStreamWAV(RSD, false, false);
-                            bool FourChannel = RSD.Channels == 4;
-                            string name2 = outPath.Replace(".res", "_amb.res");
+                            GodotBinaryAudioStreamWAV wav1 = new GodotBinaryAudioStreamWAV(RSD, false, 0);
                             wav1.WriteToFile(outPath);
-                            if (FourChannel)
+
+                            uint tracks = (RSD.Channels / 2);
+                            if (tracks > 1 && tracks < 32)
                             {
-                                GodotBinaryAudioStreamWAV wav2 = new GodotBinaryAudioStreamWAV(RSD, false, true);
-                                wav2.WriteToFile(name2);
+                                for (int t = 1; t < tracks; t++)
+                                {
+                                    string name2 = outPath.Replace(".res", $"_{t}.res");
+                                    GodotBinaryAudioStreamWAV wav2 = new GodotBinaryAudioStreamWAV(RSD, false, t);
+                                    wav2.WriteToFile(name2);
+                                }
                             }
                         }
                     }
@@ -548,7 +564,7 @@ namespace CircusSetup
                 */
                 if (item is Mesh || item is Skin)
                 {
-                    /*
+                    
                     foreach (var pitem in item.Children)
                     {
                         if (pitem is PrimitiveGroupCTTR prim)
@@ -561,7 +577,7 @@ namespace CircusSetup
                             }
                         }
                     }
-                    */
+                    
                 }
                 Recursive_CheckUnk(item, ref UnkTypes, ref UnkTypesFiles, file);
             }
@@ -630,6 +646,13 @@ namespace CircusSetup
             RootChunk.Header = System.IO.Path.GetFileName(fileName);
             treeView.Items.Add(RootChunk);
             RootChunk.IsExpanded = true;
+        }
+
+        private void demoModeToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            Util.IsDemo = !Util.IsDemo;
+            string text = Util.IsDemo ? "ON" : "OFF";
+            demoModeToggleButton.Header = $"Is Demo {text}";
         }
 
     }

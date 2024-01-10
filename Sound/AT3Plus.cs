@@ -6,7 +6,7 @@ namespace AT3Plus
     {
         
 
-        public static byte[] Decode(byte[] FileData, int channels, bool SecondChannelsOnly)
+        public static byte[] Decode(byte[] FileData, int channels, int channelpair)
         {
             byte[] outBuff = new byte[0];
 
@@ -34,11 +34,11 @@ namespace AT3Plus
                 {
                     reader.ReadBytes(ExtraDataSize - 2);
                 }
-                uint factCheck = reader.ReadUInt32();
+                uint factTest = reader.ReadUInt32();
                 int AT3_EndSample = 0;
                 int AT3_SkipSamples = 2048;
                 int ImplicitSkip = 0;
-                if (factCheck == 0x74636166)
+                if (factTest == 0x74636166)
                 {
                     int size = reader.ReadInt32();
                     if (size == 8)

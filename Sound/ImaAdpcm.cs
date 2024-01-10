@@ -30,8 +30,8 @@ namespace IMA_ADPCM
         };
 
         // Credit to https://github.com/eurotools/es-xbox-adpcm-tool
-        // Modified to support stereo and fix quality issue
-        public static byte[] Decode(byte[] ImaFileData, int channels, bool SecondChannelsOnly)
+        // Modified to support multichannel and fix quality issue
+        public static byte[] Decode(byte[] ImaFileData, int channels, int channelpair)
         {
             byte[] outBuff;
             int sign;               /* Current adpcm sign bit */
@@ -54,6 +54,22 @@ namespace IMA_ADPCM
             int valpred4 = 0;
             int index4 = 0;
 
+            int step5 = 0;
+            int valpred5 = 0;
+            int index5 = 0;
+
+            int step6 = 0;
+            int valpred6 = 0;
+            int index6 = 0;
+
+            int step7 = 0;
+            int valpred7 = 0;
+            int index7 = 0;
+            
+            int step8 = 0;
+            int valpred8 = 0;
+            int index8 = 0;
+
             using (BinaryReader BReader = new BinaryReader(new MemoryStream(ImaFileData)))
             using (MemoryStream pcmStream = new MemoryStream())
             using (BinaryWriter pcmWriter = new BinaryWriter(pcmStream))
@@ -62,6 +78,10 @@ namespace IMA_ADPCM
                 ImaAdpcmState state2 = new ImaAdpcmState();
                 ImaAdpcmState state3 = new ImaAdpcmState();
                 ImaAdpcmState state4 = new ImaAdpcmState();
+                ImaAdpcmState state5 = new ImaAdpcmState();
+                ImaAdpcmState state6 = new ImaAdpcmState();
+                ImaAdpcmState state7 = new ImaAdpcmState();
+                ImaAdpcmState state8 = new ImaAdpcmState();
 
                 while (BReader.BaseStream.Position < BReader.BaseStream.Length)
                 {
@@ -72,13 +92,17 @@ namespace IMA_ADPCM
                     List<short> vals2 = new List<short>();
                     List<short> vals3 = new List<short>();
                     List<short> vals4 = new List<short>();
+                    List<short> vals5 = new List<short>();
+                    List<short> vals6 = new List<short>();
+                    List<short> vals7 = new List<short>();
+                    List<short> vals8 = new List<short>();
                     if (channels >= 2)
                     {
                         valpred2 = BReader.ReadInt16();
                         index2 = BReader.ReadInt16();
                         step2 = StepTable[index2];
                     }
-                    if (channels == 4)
+                    if (channels >= 4)
                     {
                         valpred3 = BReader.ReadInt16();
                         index3 = BReader.ReadInt16();
@@ -87,16 +111,44 @@ namespace IMA_ADPCM
                         index4 = BReader.ReadInt16();
                         step4 = StepTable[index4];
                     }
+                    if (channels >= 6)
+                    {
+                        valpred5 = BReader.ReadInt16();
+                        index5 = BReader.ReadInt16();
+                        step5 = StepTable[index5];
+                        valpred6 = BReader.ReadInt16();
+                        index6 = BReader.ReadInt16();
+                        step6 = StepTable[index6];
+                    }
+                    if (channels >= 8)
+                    {
+                        valpred7 = BReader.ReadInt16();
+                        index7 = BReader.ReadInt16();
+                        step7 = StepTable[index7];
+                        valpred8 = BReader.ReadInt16();
+                        index8 = BReader.ReadInt16();
+                        step8 = StepTable[index8];
+                    }
 
                     vals1.Add((short)valpred);
                     if (channels >= 2)
                     {
                         vals2.Add((short)valpred2);
                     }
-                    if (channels == 4)
+                    if (channels >= 4)
                     {
                         vals3.Add((short)valpred3);
                         vals4.Add((short)valpred4);
+                    }
+                    if (channels >= 6)
+                    {
+                        vals5.Add((short)valpred5);
+                        vals6.Add((short)valpred6);
+                    }
+                    if (channels >= 8)
+                    {
+                        vals7.Add((short)valpred7);
+                        vals8.Add((short)valpred8);
                     }
                     for (int j = 0; j < 8; j++)
                     {
@@ -233,7 +285,7 @@ namespace IMA_ADPCM
                             state2.index = index2;
                         }
 
-                        if (channels == 4)
+                        if (channels >= 4)
                         {
                             bufferstep = false;
                             for (int k = 0; k < 8; k++)
@@ -365,9 +417,275 @@ namespace IMA_ADPCM
                             state4.valprev = valpred4;
                             state4.index = index4;
                         }
+
+                        if (channels >= 6)
+                        {
+                            bufferstep = false;
+                            for (int k = 0; k < 8; k++)
+                            {
+                                /* Step 1 - get the delta value */
+                                inputbuffer = BReader.ReadByte();
+                                BReader.BaseStream.Position -= 1;
+
+                                if (bufferstep)
+                                {
+                                    delta = (inputbuffer >> 4) & 0xf;
+                                    BReader.BaseStream.Position++;
+                                }
+                                else
+                                {
+                                    delta = inputbuffer & 0xf;
+                                }
+                                bufferstep = !bufferstep;
+
+                                /* Step 2 - Find new index value (for later) */
+                                index5 += IndexTable[delta & 7];
+                                if (index5 < 0) index5 = 0;
+                                if (index5 > 88) index5 = 88;
+
+                                /* Step 3 - Separate sign and magnitude */
+                                sign = delta & 8;
+                                delta = delta & 7;
+
+                                /* Step 4 - Compute difference and new predicted value */
+                                /*
+                                ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
+                                ** in adpcm_coder.
+                                */
+                                vpdiff = step5 >> 3;
+                                if ((delta & 4) != 0) vpdiff += step5;
+                                if ((delta & 2) != 0) vpdiff += step5 >> 1;
+                                if ((delta & 1) != 0) vpdiff += step5 >> 2;
+
+                                if (sign != 0)
+                                    valpred5 -= vpdiff;
+                                else
+                                    valpred5 += vpdiff;
+
+                                /* Step 5 - clamp output value */
+                                if (valpred5 > short.MaxValue)
+                                    valpred5 = short.MaxValue;
+                                else if (valpred5 < short.MinValue)
+                                    valpred5 = short.MinValue;
+
+                                /* Step 6 - Update step value */
+                                step5 = StepTable[index5];
+
+                                /* Step 7 - Output value */
+                                //pcmWriter.Write((short)valpred2);
+                                if (j == 7 && k == 7)
+                                {
+
+                                }
+                                else
+                                {
+                                    vals5.Add((short)valpred5);
+                                }
+                            }
+                            state5.valprev = valpred5;
+                            state5.index = index5;
+
+                            bufferstep = false;
+                            for (int k = 0; k < 8; k++)
+                            {
+                                /* Step 1 - get the delta value */
+                                inputbuffer = BReader.ReadByte();
+                                BReader.BaseStream.Position -= 1;
+
+                                if (bufferstep)
+                                {
+                                    delta = (inputbuffer >> 4) & 0xf;
+                                    BReader.BaseStream.Position++;
+                                }
+                                else
+                                {
+                                    delta = inputbuffer & 0xf;
+                                }
+                                bufferstep = !bufferstep;
+
+                                /* Step 2 - Find new index value (for later) */
+                                index6 += IndexTable[delta & 7];
+                                if (index6 < 0) index6 = 0;
+                                if (index6 > 88) index6 = 88;
+
+                                /* Step 3 - Separate sign and magnitude */
+                                sign = delta & 8;
+                                delta = delta & 7;
+
+                                /* Step 4 - Compute difference and new predicted value */
+                                /*
+                                ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
+                                ** in adpcm_coder.
+                                */
+                                vpdiff = step6 >> 3;
+                                if ((delta & 4) != 0) vpdiff += step6;
+                                if ((delta & 2) != 0) vpdiff += step6 >> 1;
+                                if ((delta & 1) != 0) vpdiff += step6 >> 2;
+
+                                if (sign != 0)
+                                    valpred6 -= vpdiff;
+                                else
+                                    valpred6 += vpdiff;
+
+                                /* Step 5 - clamp output value */
+                                if (valpred6 > short.MaxValue)
+                                    valpred6 = short.MaxValue;
+                                else if (valpred6 < short.MinValue)
+                                    valpred6 = short.MinValue;
+
+                                /* Step 6 - Update step value */
+                                step6 = StepTable[index6];
+
+                                /* Step 7 - Output value */
+                                //pcmWriter.Write((short)valpred2);
+                                if (j == 7 && k == 7)
+                                {
+
+                                }
+                                else
+                                {
+                                    vals6.Add((short)valpred6);
+                                }
+                            }
+                            state6.valprev = valpred6;
+                            state6.index = index6;
+                        }
+
+                        if (channels >= 8)
+                        {
+                            bufferstep = false;
+                            for (int k = 0; k < 8; k++)
+                            {
+                                /* Step 1 - get the delta value */
+                                inputbuffer = BReader.ReadByte();
+                                BReader.BaseStream.Position -= 1;
+
+                                if (bufferstep)
+                                {
+                                    delta = (inputbuffer >> 4) & 0xf;
+                                    BReader.BaseStream.Position++;
+                                }
+                                else
+                                {
+                                    delta = inputbuffer & 0xf;
+                                }
+                                bufferstep = !bufferstep;
+
+                                /* Step 2 - Find new index value (for later) */
+                                index7 += IndexTable[delta & 7];
+                                if (index7 < 0) index7 = 0;
+                                if (index7 > 88) index7 = 88;
+
+                                /* Step 3 - Separate sign and magnitude */
+                                sign = delta & 8;
+                                delta = delta & 7;
+
+                                /* Step 4 - Compute difference and new predicted value */
+                                /*
+                                ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
+                                ** in adpcm_coder.
+                                */
+                                vpdiff = step7 >> 3;
+                                if ((delta & 4) != 0) vpdiff += step7;
+                                if ((delta & 2) != 0) vpdiff += step7 >> 1;
+                                if ((delta & 1) != 0) vpdiff += step7 >> 2;
+
+                                if (sign != 0)
+                                    valpred7 -= vpdiff;
+                                else
+                                    valpred7 += vpdiff;
+
+                                /* Step 5 - clamp output value */
+                                if (valpred7 > short.MaxValue)
+                                    valpred7 = short.MaxValue;
+                                else if (valpred7 < short.MinValue)
+                                    valpred7 = short.MinValue;
+
+                                /* Step 6 - Update step value */
+                                step7 = StepTable[index7];
+
+                                /* Step 7 - Output value */
+                                //pcmWriter.Write((short)valpred2);
+                                if (j == 7 && k == 7)
+                                {
+
+                                }
+                                else
+                                {
+                                    vals7.Add((short)valpred7);
+                                }
+                            }
+                            state7.valprev = valpred7;
+                            state7.index = index7;
+
+                            bufferstep = false;
+                            for (int k = 0; k < 8; k++)
+                            {
+                                /* Step 1 - get the delta value */
+                                inputbuffer = BReader.ReadByte();
+                                BReader.BaseStream.Position -= 1;
+
+                                if (bufferstep)
+                                {
+                                    delta = (inputbuffer >> 4) & 0xf;
+                                    BReader.BaseStream.Position++;
+                                }
+                                else
+                                {
+                                    delta = inputbuffer & 0xf;
+                                }
+                                bufferstep = !bufferstep;
+
+                                /* Step 2 - Find new index value (for later) */
+                                index8 += IndexTable[delta & 7];
+                                if (index8 < 0) index8 = 0;
+                                if (index8 > 88) index8 = 88;
+
+                                /* Step 3 - Separate sign and magnitude */
+                                sign = delta & 8;
+                                delta = delta & 7;
+
+                                /* Step 4 - Compute difference and new predicted value */
+                                /*
+                                ** Computes 'vpdiff = (delta+0.5)*step/4', but see comment
+                                ** in adpcm_coder.
+                                */
+                                vpdiff = step8 >> 3;
+                                if ((delta & 4) != 0) vpdiff += step8;
+                                if ((delta & 2) != 0) vpdiff += step8 >> 1;
+                                if ((delta & 1) != 0) vpdiff += step8 >> 2;
+
+                                if (sign != 0)
+                                    valpred8 -= vpdiff;
+                                else
+                                    valpred8 += vpdiff;
+
+                                /* Step 5 - clamp output value */
+                                if (valpred8 > short.MaxValue)
+                                    valpred8 = short.MaxValue;
+                                else if (valpred8 < short.MinValue)
+                                    valpred8 = short.MinValue;
+
+                                /* Step 6 - Update step value */
+                                step8 = StepTable[index8];
+
+                                /* Step 7 - Output value */
+                                //pcmWriter.Write((short)valpred2);
+                                if (j == 7 && k == 7)
+                                {
+
+                                }
+                                else
+                                {
+                                    vals8.Add((short)valpred8);
+                                }
+                            }
+                            state8.valprev = valpred8;
+                            state8.index = index8;
+                        }
                     }
 
-                    if (channels != 4)
+                    if (channels < 4)
                     {
                         for (int i = 0; i < vals1.Count; i++)
                         {
@@ -390,7 +708,7 @@ namespace IMA_ADPCM
                     {
                         for (int i = 0; i < vals1.Count; i++)
                         {
-                            if (SecondChannelsOnly)
+                            if (channelpair == 1)
                             {
                                 if (vals3.Count != 0)
                                 {
@@ -399,6 +717,28 @@ namespace IMA_ADPCM
                                 if (vals4.Count != 0)
                                 {
                                     pcmWriter.Write(vals4[i]);
+                                }
+                            }
+                            else if (channelpair == 2)
+                            {
+                                if (vals3.Count != 0)
+                                {
+                                    pcmWriter.Write(vals5[i]);
+                                }
+                                if (vals4.Count != 0)
+                                {
+                                    pcmWriter.Write(vals6[i]);
+                                }
+                            }
+                            else if (channelpair == 3)
+                            {
+                                if (vals3.Count != 0)
+                                {
+                                    pcmWriter.Write(vals7[i]);
+                                }
+                                if (vals4.Count != 0)
+                                {
+                                    pcmWriter.Write(vals8[i]);
                                 }
                             }
                             else

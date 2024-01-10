@@ -112,6 +112,10 @@ namespace Pure3D
                             if (Width == 128 && Height >= 128) IsSwizzled = true;
                             if (Width == Height && Width >= 32) IsSwizzled = true;
                         }
+                        if (Util.IsDemo)
+                        {
+                            IsSwizzled = false;
+                        }
                         Colors.Add(palette[0]);
                         var ColorPal = palette.ToArray();
                         int dbw = Width / 128;
@@ -131,7 +135,7 @@ namespace Pure3D
                             if (IsSwizzled)
                             {
                                 ez.writeTexPSMCT32(0, dbw, 0, 0, rrw, rrh, imageData);
-                                ez.readTexPSMT4_mod(0, textureBufferWidth, 0, 0, Width / 2, Height, ref texData);
+                                ez.readTexPSMT4_mod(0, textureBufferWidth, 0, 0, Width, Height, ref texData);
                             }
                             else
                             {

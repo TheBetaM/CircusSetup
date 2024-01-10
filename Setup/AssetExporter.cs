@@ -259,14 +259,17 @@ namespace CircusSetup
                     string dirPath = System.IO.Path.GetDirectoryName(outPath);
                     Directory.CreateDirectory(dirPath);
 
-                    GodotBinaryAudioStreamWAV wav1 = new GodotBinaryAudioStreamWAV(rsd, false, false);
-                    bool FourChannel = rsd.Channels == 4;
-                    string name2 = outPath.Replace(".res", "_amb.res");
+                    GodotBinaryAudioStreamWAV wav1 = new GodotBinaryAudioStreamWAV(rsd, false, 0);
                     wav1.WriteToFile(outPath);
-                    if (FourChannel)
+                    uint tracks = (rsd.Channels / 2);
+                    if (tracks > 1 && tracks < 32)
                     {
-                        GodotBinaryAudioStreamWAV wav2 = new GodotBinaryAudioStreamWAV(rsd, false, true);
-                        wav2.WriteToFile(name2);
+                        for (int t = 1; t < tracks; t++)
+                        {
+                            string name2 = outPath.Replace(".res", $"_{t}.res");
+                            GodotBinaryAudioStreamWAV wav2 = new GodotBinaryAudioStreamWAV(rsd, false, t);
+                            wav2.WriteToFile(name2);
+                        }
                     }
 
                     LevelsLeft--;

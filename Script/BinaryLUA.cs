@@ -12,24 +12,44 @@ namespace CircusSetup.Script
         public override FileTypes FileType => FileTypes.BinaryLUA;
 
         public LuaFunc MainFunc = new LuaFunc();
+        public bool IsTitansDS = false;
 
         public override void Load(BinaryReader reader, long length)
         {
             uint Tag = reader.ReadUInt32();
             if (Tag != 0x61754C1B) return;
             byte Version = reader.ReadByte(); //0x51 Lua 5.1
+            if (IsTitansDS)
+            {
+                reader.ReadByte();
+                MainFunc.IsTitansDS = true;
+            }
             byte Endianness = reader.ReadByte(); // 1 - little
             byte Size_Int = reader.ReadByte();
             byte Size_SizeT = reader.ReadByte();
             byte Size_Instruction = reader.ReadByte();
             byte Size_Number = reader.ReadByte(); 
-            float SampleNumber = reader.ReadUInt32(); // 31415926... aka Pi
+            if (IsTitansDS)
+            {
+                reader.ReadByte();
+            }
+            else
+            {
+                float SampleNumber = reader.ReadUInt32(); // 31415926... aka Pi
+            }
             MainFunc.LoadFunction(reader, "(chunk)", 0, 1);
         }
 
         public override void Write(BinaryWriter writer)
         {
-            Write_5_0(writer);
+            if (!IsTitansDS)
+            {
+                Write_5_0(writer);
+            }
+            else
+            {
+                Write_5_1(writer);
+            }
         }
 
         public void Write_5_0(BinaryWriter writer)
@@ -74,6 +94,7 @@ namespace CircusSetup.Script
             public byte IsVararg;
             public byte MaxStackSize;
             public uint LineDefined;
+            public uint LastLineDefined;
             public List<uint> Code = new List<uint>();
             public List<object> Constants = new List<object>();
             public List<ushort> LineInfos = new List<ushort>();
@@ -81,22 +102,39 @@ namespace CircusSetup.Script
             public List<(string, uint, uint)> Locals = new List<(string, uint, uint)>(); //varname, startpc, endpc
             public List<LuaFunc> LocalFuncs = new List<LuaFunc>();
             public LuaFunc Parent;
+            public bool IsTitansDS;
 
             public void LoadFunction(BinaryReader reader, string funcName, int num, int inlevel)
             {
                 level = inlevel;
                 sourceFileName = LoadString(reader);
                 LineDefined = reader.ReadUInt32();
+                if (IsTitansDS)
+                {
+                    LastLineDefined = reader.ReadUInt32();
+                }
                 Nups = reader.ReadByte();
                 NumParams = reader.ReadByte();
                 IsVararg = reader.ReadByte();
                 MaxStackSize = reader.ReadByte();
-                LoadLineInfos(reader);
-                LoadLocals(reader);
-                LoadUpvalues(reader);
-                LoadConstants(reader);
-                LoadFunctions(reader);
-                LoadCode(reader);
+                if (!IsTitansDS)
+                {
+                    LoadLineInfos(reader);
+                    LoadLocals(reader);
+                    LoadUpvalues(reader);
+                    LoadConstants(reader);
+                    LoadFunctions(reader);
+                    LoadCode(reader);
+                }
+                else
+                {
+                    LoadCode(reader);
+                    LoadConstants(reader);
+                    LoadFunctions(reader);
+                    LoadLineInfos(reader);
+                    LoadLocals(reader);
+                    LoadUpvalues(reader);
+                }
             }
 
             void LoadLineInfos(BinaryReader reader)
@@ -145,7 +183,14 @@ namespace CircusSetup.Script
                     }
                     else if (type == 3)
                     {
-                        Constants.Add(reader.ReadSingle());
+                        if (!IsTitansDS)
+                        {
+                            Constants.Add(reader.ReadSingle());
+                        }
+                        else
+                        {
+                            Constants.Add(FixedPoint32Unpack(reader.ReadUInt32()));
+                        }
                     }
                     else if (type == 4)
                     {
@@ -165,6 +210,7 @@ namespace CircusSetup.Script
                 {
                     LuaFunc func = new LuaFunc();
                     func.Parent = this;
+                    func.IsTitansDS = IsTitansDS;
                     func.LoadFunction(reader, sourceFileName, i, level + 1);
                     LocalFuncs.Add(func);
                 }
@@ -277,6 +323,11 @@ namespace CircusSetup.Script
                         writer.Write((byte)3);
                         writer.Write((double)fval);
                     }
+                    else if (item is double dval)
+                    {
+                        writer.Write((byte)3);
+                        writer.Write(dval);
+                    }
                     else if (item is string sval)
                     {
                         writer.Write((byte)4);
@@ -309,7 +360,7 @@ namespace CircusSetup.Script
                 foreach (var item in Code)
                 {
                     var opcode = item & 0x3F;
-                    if (opcode == (uint)OpCodeTitans.TitansAdd)
+                    if (!IsTitansDS && opcode == (uint)OpCodeTitans.TitansAdd)
                     {
                         uint fixCode = item - opcode;
                         //fixCode += (uint)OpCodeTitans.NewTable;
@@ -329,6 +380,16 @@ namespace CircusSetup.Script
                 writer.Write((uint)text.Length + 1);
                 writer.Write(text.ToCharArray());
                 writer.Write((byte)0);
+            }
+
+            double FixedPoint32Unpack(uint x)
+            {
+                double y = (double)x;
+                if ((x & 0x80000000) != 0)
+                {
+                    y = (double)(int)(x | 0x7FFFFFFF);
+                }
+                return y * (int)Math.Pow(0.5d, 12);
             }
         }
 
@@ -360,7 +421,14 @@ namespace CircusSetup.Script
                 var itemA = (item >> 6) & 0xFF;
                 var itemB = (item >> 14) & 0x1FF;
                 var itemC = (item >> 23) & 0x1FF;
-                sb.AppendLine($"{add}[{i}]{item:X8}: {opcode}/{(OpCodeTitans)opcode} {itemA} {itemB} {itemC}");
+                if (IsTitansDS)
+                {
+                    sb.AppendLine($"{add}[{i}]{item:X8}: {opcode}/{(OpCode51)opcode} {itemA} {itemB} {itemC}");
+                }
+                else
+                {
+                    sb.AppendLine($"{add}[{i}]{item:X8}: {opcode}/{(OpCodeTitans)opcode} {itemA} {itemB} {itemC}");
+                }
                 i++;
             }
             foreach (var item in func.LocalFuncs)

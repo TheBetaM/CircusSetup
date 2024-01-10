@@ -48,6 +48,11 @@ namespace CircusSetup.Script
                     break;
                 case 0x61754C1B: // ".Lua" binary custom Lua compiler (Titans/MoM)
                     script = new BinaryLUA();
+                    if (FullName.ToLower().EndsWith(".lbc"))
+                    {
+                        var bin = (BinaryLUA)script;
+                        bin.IsTitansDS = true;
+                    }
                     break;
                 case 0x30676966: // "fig0" binary FightTree (Titans/MoM)
                     break;

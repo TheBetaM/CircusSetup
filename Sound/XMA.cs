@@ -7,7 +7,7 @@ namespace XMA_Audio
     {
         
 
-        public static byte[] Decode(byte[] FileData, int channels, bool SecondChannelsOnly)
+        public static byte[] Decode(byte[] FileData, int channels, int channelpair)
         {
             byte[] outBuff = new byte[0];
             int BlockAlign = 2048;

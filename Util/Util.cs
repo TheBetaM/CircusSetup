@@ -8,6 +8,7 @@ namespace Pure3D
     public static class Util
     {
         public static bool ExportToGodot = true;
+        public static bool IsDemo = false; // for CTTR demo
 
         // ReadString accessor because Pure3D loves null terminated strings.
         public static string ReadString(BinaryReader reader, ref ulong padding)
