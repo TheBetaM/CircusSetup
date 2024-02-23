@@ -13,7 +13,7 @@ namespace Pure3D.Chunks
         public uint Version;
         public uint NumberOfFrames;
         public string Parameter;
-        public ushort[,] Values; // Array of 3 (u)int16s
+        public short[,] Values; // Array of 3 (u)int16s
         public ushort[] Frames;
 
         public QuaternionChannel2(File file, uint type) : base(file, type)
@@ -32,12 +32,12 @@ namespace Pure3D.Chunks
                 Frames[i] = reader.ReadUInt16();
             }
 
-            Values = new ushort[NumberOfFrames, 3];
+            Values = new short[NumberOfFrames, 3];
             for (int i = 0; i < NumberOfFrames; i++)
             {
-                Values[i, 0] = reader.ReadUInt16();
-                Values[i, 1] = reader.ReadUInt16();
-                Values[i, 2] = reader.ReadUInt16();
+                Values[i, 0] = reader.ReadInt16();
+                Values[i, 1] = reader.ReadInt16();
+                Values[i, 2] = reader.ReadInt16();
             }
         }
 

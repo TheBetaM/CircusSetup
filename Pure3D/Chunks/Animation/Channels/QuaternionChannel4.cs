@@ -13,9 +13,7 @@ namespace Pure3D.Chunks
         public uint Version;
         public uint NumberOfFrames;
         public string Parameter;
-        public byte[] Values1; // Array of 3 bytes
-        public byte[] Values2;
-        public byte[] Values3;
+        public sbyte[,] Values; // Array of XYZ angles
         public ushort[] Frames;
 
         public QuaternionChannel4(File file, uint type) : base(file, type)
@@ -34,14 +32,12 @@ namespace Pure3D.Chunks
                 Frames[i] = reader.ReadUInt16();
             }
 
-            Values1 = new byte[NumberOfFrames];
-            Values2 = new byte[NumberOfFrames];
-            Values3 = new byte[NumberOfFrames];
+            Values = new sbyte[NumberOfFrames, 3];
             for (int i = 0; i < NumberOfFrames; i++)
             {
-                Values1[i] = reader.ReadByte();
-                Values2[i] = reader.ReadByte();
-                Values3[i] = reader.ReadByte();
+                Values[i, 0] = reader.ReadSByte();
+                Values[i, 1] = reader.ReadSByte();
+                Values[i, 2] = reader.ReadSByte();
             }
         }
 
@@ -66,9 +62,9 @@ namespace Pure3D.Chunks
             }
             for (int i = 0; i < NumberOfFrames; i++)
             {
-                writer.Write(Values1[i]);
-                writer.Write(Values2[i]);
-                writer.Write(Values3[i]);
+                writer.Write(Values[i, 0]);
+                writer.Write(Values[i, 1]);
+                writer.Write(Values[i, 2]);
             }
 
         }
@@ -90,9 +86,9 @@ namespace Pure3D.Chunks
             {
                 Lines.AppendLine($"Frame{i}: {Frames[i]}");
             }
-            for (int i = 0; i < Values1.Length; i++)
+            for (int i = 0; i < Values.Length; i++)
             {
-                Lines.AppendLine($"Values{i}: {Values1[i]} / {Values2[i]} / {Values3[i]}");
+                Lines.AppendLine($"Values{i}: {Values[i, 0]} / {Values[i, 1]} / {Values[i, 2]}");
             }
 
             return Lines.ToString();

@@ -152,7 +152,7 @@ namespace Pure3D.Chunks
             //bool Unused1 = (Bitfield & (1 << 6)) != 0;
             bool UncompressedPositions = (Bitfield & (1 << 7)) != 0;
 
-            //bool AlwaysTrue = (Bitfield & (1 << 8)) != 0; // always true - pos? uv?
+            //bool AlwaysTrue = (Bitfield & (1 << 8)) != 0; // always true - pos?
             bool HasFourBoneIndices = (Bitfield & (1 << 9)) != 0;
             //bool Unused2 = (Bitfield & (1 << 10)) != 0;
             bool HasByteIndices = (Bitfield & (1 << 11)) != 0;
@@ -206,9 +206,7 @@ namespace Pure3D.Chunks
                 ModelOffsetX = reader.ReadSingle();
                 ModelOffsetY = reader.ReadSingle();
                 ModelOffsetZ = reader.ReadSingle();
-                reader.ReadBytes(0x64); // 25 floats
-                reader.ReadUInt32();
-                reader.ReadUInt32();
+                reader.ReadSingle();
             }
             else
             {
@@ -223,10 +221,10 @@ namespace Pure3D.Chunks
                 UV_ScaleY = reader.ReadSingle();
                 UV_OffsetX = reader.ReadSingle();
                 UV_OffsetY = reader.ReadSingle();
-                reader.ReadBytes(0x60); // 24 floats
-                reader.ReadUInt32();
-                reader.ReadUInt32();
             }
+            reader.ReadBytes(0x64); // 24 floats (bounding box 8x Vector3)
+            reader.ReadUInt32(); // vertex data offset
+            reader.ReadUInt32(); // index data offset
 
             uint ExtraPadding = 4 - MatricesCount;
             if (HasEightBoneIndices)

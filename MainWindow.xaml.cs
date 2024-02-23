@@ -485,7 +485,7 @@ namespace CircusSetup
 
         private void batchTestButton_Click(object sender, RoutedEventArgs e)
         {
-            //return;
+            return;
             string path = "";
 
             List<string> paths = new List<string>();
@@ -612,13 +612,13 @@ namespace CircusSetup
             {
                 AnimCache.Add(anim);
             }
-            //addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
+            addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
         }
 
         private void clearAnimButton_Click(object sender, RoutedEventArgs e)
         {
             AnimCache.Clear();
-            //addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
+            addAnimButton.Header = $"Add To Anim Cache ({AnimCache.Count})";
         }
 
         void LoadTreeRSD()

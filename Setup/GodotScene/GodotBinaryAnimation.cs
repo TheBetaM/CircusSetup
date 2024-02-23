@@ -157,61 +157,12 @@ namespace CircusSetup
                             List<float> frames = new List<float>();
                             for (int i = 0; i < quat2chan.NumberOfFrames; i++)
                             {
-                                /*
-                                Quaternion quat = Quaternion.CreateFromYawPitchRoll(
-                                    ((quat2chan.Values[i].Y / 32767f) - 1f) * (float)Math.PI,
-                                    ((quat2chan.Values[i].X / 32767f) - 1f) * (float)Math.PI,
-                                    ((quat2chan.Values[i].Z / 32767f) - 1f) * (float)Math.PI);
-                                
-                                Matrix4x4 matX = Matrix4x4.CreateRotationX(((quat2chan.Values[i].X / 32767f)) * (float)Math.PI);
-                                Matrix4x4 matY = Matrix4x4.CreateRotationY(((quat2chan.Values[i].Y / 32767f)) * (float)Math.PI);
-                                Matrix4x4 matZ = Matrix4x4.CreateRotationZ(((quat2chan.Values[i].Z / 32767f)) * (float)Math.PI);
-                                */
-                                /*
-                                float angX = quat2chan.Values[i].X / (float)(ushort.MaxValue + 1) * (float)Math.PI * 2;
-                                float angY = quat2chan.Values[i].Y / (float)(ushort.MaxValue + 1) * (float)Math.PI * 2;
-                                float angZ = quat2chan.Values[i].Z / (float)(ushort.MaxValue + 1) * (float)Math.PI * 2;
-                                Matrix4x4 matX = Matrix4x4.CreateRotationX(angX);
-                                Matrix4x4 matY = Matrix4x4.CreateRotationY(angY);
-                                Matrix4x4 matZ = Matrix4x4.CreateRotationZ(angZ);
-                                Quaternion quat = Quaternion.CreateFromRotationMatrix(matX * matY * matZ);
-                                float angX = (float)Math.PI * 0.5f * (quat2chan.Values[i, 0] / 32767f);
-                                float angY = (float)Math.PI * 0.5f * (quat2chan.Values[i, 1] / 32767f);
-                                float angZ = (float)Math.PI * 0.5f * (quat2chan.Values[i, 2] / 32767f);
-                                */
-                                //float angX = (4f * quat2chan.Values[i, 0] / 65535f) - 0.25f;
-                                //float angY = (4f * quat2chan.Values[i, 1] / 65535f) - 0.25f;
-                                //float angZ = (4f * quat2chan.Values[i, 2] / 65535f) - 0.25f;
-                                //float angX = (float)Math.PI * 2f * (quat2chan.Values[i, 0] / 65535f);
-                                //float angY = (float)Math.PI * 2f * (quat2chan.Values[i, 1] / 65535f);
-                                //float angZ = (float)Math.PI * 2f * (quat2chan.Values[i, 2] / 65535f);
-                                //Quaternion quat = Quaternion.CreateFromYawPitchRoll(angY, angX, angZ);
-                                //Matrix4x4.Decompose(bone.LocalMatrix, out Vector3 sc, out Quaternion rot, out Vector3 tr);
-                                //quat += rot;
-                                //float angX = (float)Math.PI * -1f * ((quat2chan.Values[i, 0] / 32767f) + 1f);
-                                //float angY = (float)Math.PI * 1f * ((quat2chan.Values[i, 1] / 32767f) + 1f);
-                                //float angZ = (float)Math.PI * 1f * ((quat2chan.Values[i, 2] / 32767f) + 1f);
-                                //float angX = (float)Math.PI * 1f * (quat2chan.Values[i, 0] / 32767f);
-                                //float angY = (float)Math.PI * 1f * (quat2chan.Values[i, 1] / 32767f);
-                                //float angZ = (float)Math.PI * 1f * (quat2chan.Values[i, 2] / 32767f);
-
-                                //float angX = (float)Math.PI * 0.5f  * (quat2chan.Values[i, 0] / 32767f);
-                                //float angY = (float)Math.PI * 0.5f  * (quat2chan.Values[i, 1] / 32767f);
-                                //float angZ = (float)Math.PI * 0.5f  * (quat2chan.Values[i, 2] / 32767f);
-                                //Quaternion quat = new Quaternion(angX, angY, angZ, 1f);
-
-                                float angX = (float)Math.PI * 2f * (quat2chan.Values[i, 0] / 65535f);
-                                float angY = (float)Math.PI * 2f * (quat2chan.Values[i, 1] / 65535f);
-                                float angZ = (float)Math.PI * 2f * (quat2chan.Values[i, 2] / 65535f);
-                                Quaternion quat = Quaternion.CreateFromYawPitchRoll(angY, angX, angZ);
-                                //Quaternion quat = new Quaternion(angX, angY, angZ, 1f);
+                                float angX = (float)quat2chan.Values[i, 0] / short.MaxValue;
+                                float angY = (float)quat2chan.Values[i, 1] / short.MaxValue;
+                                float angZ = (float)quat2chan.Values[i, 2] / short.MaxValue;
+                                float angW = (float)Math.Sqrt(1 - (angX * angX + angY * angY + angZ * angZ));
+                                Quaternion quat = new Quaternion(angX, angY, angZ, angW);
                                 quat = Quaternion.Normalize(quat);
-                                
-                                //Matrix4x4 matX = Matrix4x4.CreateRotationX(angX);
-                                //Matrix4x4 matY = Matrix4x4.CreateRotationY(angY);
-                                //Matrix4x4 matZ = Matrix4x4.CreateRotationZ(angZ);
-                                //Quaternion quat = Quaternion.CreateFromRotationMatrix(matX * matY * matZ);
-                                //Matrix4x4.Decompose(bone.LocalMatrix, out var scale, out var rot, out var pos);
 
                                 frames.Add(quat2chan.Frames[i] * FrameStep);
                                 frames.Add(1f);
@@ -249,28 +200,36 @@ namespace CircusSetup
                             List<float> frames = new List<float>();
                             for (int i = 0; i < quat3chan.NumberOfFrames; i++)
                             {
+                                float angX = (float)quat3chan.Values[i, 0] / sbyte.MaxValue;
+                                float angY = (float)quat3chan.Values[i, 1] / sbyte.MaxValue;
+                                float angZ = (float)quat3chan.Values[i, 2] / sbyte.MaxValue;
+                                float angW = (float)quat3chan.Values[i, 3] / sbyte.MaxValue;
+                                Quaternion quat = new Quaternion(angX, angY, angZ, angW);
+                                quat = Quaternion.Normalize(quat);
+
                                 frames.Add(quat3chan.Frames[i] * FrameStep);
                                 frames.Add(1f);
-                                frames.Add(quat3chan.Values1[i] / 127f);
-                                frames.Add(quat3chan.Values2[i] / 127f);
-                                frames.Add(quat3chan.Values3[i] / 127f);
-                                frames.Add(quat3chan.Values4[i] / 127f);
+                                frames.Add(quat.X);
+                                frames.Add(quat.Y);
+                                frames.Add(quat.Z);
+                                frames.Add(quat.W);
                             }
 
-                            //res.Add($"tracks/{track}/type", "rotation_3d");
-                            //res.Add($"tracks/{track}/path", node);
-                            //res.Add($"tracks/{track}/keys", frames.ToArray());
-                            //track++;
+                            res.Add($"tracks/{track}/type", "rotation_3d");
+                            res.Add($"tracks/{track}/path", node);
+                            res.Add($"tracks/{track}/keys", frames.ToArray());
+                            track++;
                         }
                         else if (chan is QuaternionChannel4 quat4chan && quat4chan.Parameter == "ROT")
                         {
                             List<float> frames = new List<float>();
                             for (int i = 0; i < quat4chan.NumberOfFrames; i++)
                             {
-                                float angX = (float)Math.PI * 2f * (quat4chan.Values1[i] / 127f);
-                                float angY = (float)Math.PI * 2f * (quat4chan.Values2[i] / 127f);
-                                float angZ = (float)Math.PI * 2f * (quat4chan.Values3[i] / 127f);
-                                Quaternion quat = Quaternion.CreateFromYawPitchRoll(angY, angX, angZ);
+                                float angX = (float)quat4chan.Values[i, 0] / sbyte.MaxValue;
+                                float angY = (float)quat4chan.Values[i, 1] / sbyte.MaxValue;
+                                float angZ = (float)quat4chan.Values[i, 2] / sbyte.MaxValue;
+                                float angW = (float)Math.Sqrt(1 - (angX * angX + angY * angY + angZ * angZ));
+                                Quaternion quat = new Quaternion(angX, angY, angZ, angW);
                                 quat = Quaternion.Normalize(quat);
 
                                 frames.Add(quat4chan.Frames[i] * FrameStep);
@@ -281,10 +240,10 @@ namespace CircusSetup
                                 frames.Add(quat.W);
                             }
 
-                            //res.Add($"tracks/{track}/type", "rotation_3d");
-                            //res.Add($"tracks/{track}/path", node);
-                            //res.Add($"tracks/{track}/keys", frames.ToArray());
-                            //track++;
+                            res.Add($"tracks/{track}/type", "rotation_3d");
+                            res.Add($"tracks/{track}/path", node);
+                            res.Add($"tracks/{track}/keys", frames.ToArray());
+                            track++;
                         }
                     }
                     
