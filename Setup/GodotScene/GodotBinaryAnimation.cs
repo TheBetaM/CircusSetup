@@ -25,6 +25,10 @@ namespace CircusSetup
             if (AllFrames == 0) return;
             res.Add("length", FrameStep * AllFrames);
             res.Add("step", FrameStep);
+            if (Anim.Looping != 0)
+            {
+                res.Add("loop_mode", 1);
+            }
 
             var groupList = Anim.GetChild<AnimationGroupList>();
             int track = 0;
@@ -239,6 +243,48 @@ namespace CircusSetup
                             res.Add($"tracks/{track}/path", node);
                             res.Add($"tracks/{track}/keys", frames.ToArray());
                             track++;
+                        }
+                        else if (chan is QuaternionChannel3 quat3chan && quat3chan.Parameter == "ROT")
+                        {
+                            List<float> frames = new List<float>();
+                            for (int i = 0; i < quat3chan.NumberOfFrames; i++)
+                            {
+                                frames.Add(quat3chan.Frames[i] * FrameStep);
+                                frames.Add(1f);
+                                frames.Add(quat3chan.Values1[i] / 127f);
+                                frames.Add(quat3chan.Values2[i] / 127f);
+                                frames.Add(quat3chan.Values3[i] / 127f);
+                                frames.Add(quat3chan.Values4[i] / 127f);
+                            }
+
+                            //res.Add($"tracks/{track}/type", "rotation_3d");
+                            //res.Add($"tracks/{track}/path", node);
+                            //res.Add($"tracks/{track}/keys", frames.ToArray());
+                            //track++;
+                        }
+                        else if (chan is QuaternionChannel4 quat4chan && quat4chan.Parameter == "ROT")
+                        {
+                            List<float> frames = new List<float>();
+                            for (int i = 0; i < quat4chan.NumberOfFrames; i++)
+                            {
+                                float angX = (float)Math.PI * 2f * (quat4chan.Values1[i] / 127f);
+                                float angY = (float)Math.PI * 2f * (quat4chan.Values2[i] / 127f);
+                                float angZ = (float)Math.PI * 2f * (quat4chan.Values3[i] / 127f);
+                                Quaternion quat = Quaternion.CreateFromYawPitchRoll(angY, angX, angZ);
+                                quat = Quaternion.Normalize(quat);
+
+                                frames.Add(quat4chan.Frames[i] * FrameStep);
+                                frames.Add(1f);
+                                frames.Add(quat.X);
+                                frames.Add(quat.Y);
+                                frames.Add(quat.Z);
+                                frames.Add(quat.W);
+                            }
+
+                            //res.Add($"tracks/{track}/type", "rotation_3d");
+                            //res.Add($"tracks/{track}/path", node);
+                            //res.Add($"tracks/{track}/keys", frames.ToArray());
+                            //track++;
                         }
                     }
                     

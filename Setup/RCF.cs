@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 // RCF API by NeoKesha and BetaM
 // Converted from VisualBasic
 
@@ -209,6 +210,7 @@ namespace RadcoreCementFile
 
             RCF.Position = Header.T2Offset;
 
+            int hashID = -1;
             Header.NamesAligment = RCFReader.ReadUInt32();
             Header.Gap2 = RCFReader.ReadUInt32();
             for (Int32 i = 0; i <= Header.Files - 1; i++)
@@ -221,6 +223,10 @@ namespace RadcoreCementFile
                 Header.T2File[i].Name = new string(tempName);
                 Header.T2File[i].Gap2 = (uint)RCFReader.ReadInt32();
                 Header.T2File[i].External = "";
+                if (Header.T2File[i].Name == "hashdictionary.txt")
+                {
+                    hashID = i;
+                }
             }
 
             Int32 n = 1;
@@ -259,6 +265,38 @@ namespace RadcoreCementFile
                         Header.T2File[i].Ref = j;
                 }
             }
+
+            if (hashID != -1)
+            {
+                RCF.Position = Header.T1File[Header.T2File[hashID].Ref].Offset;
+                byte[] hashbuffer = RCFReader.ReadBytes((int)Header.T1File[Header.T2File[hashID].Ref].Size);
+                Dictionary<string, string> hashes = new Dictionary<string, string>();
+                using (MemoryStream hashstream = new MemoryStream(hashbuffer))
+                {
+                    using (StreamReader sr = new StreamReader(hashstream))
+                    {
+                        string? line = sr.ReadLine();
+                        while (line != null)
+                        {
+                            if (!hashes.ContainsKey(line.Split(" ")[1] + ".p3d"))
+                            {
+                                hashes.Add(line.Split(" ")[1] + ".p3d", line.Split(" ")[0]);
+                            }
+                            line = sr.ReadLine();
+                        }
+                    }
+                }
+
+                for (Int32 i = 0; i <= Header.Files - 1; i++)
+                {
+                    string key = Header.T2File[i].Name.Split("\\").Last();
+                    if (hashes.ContainsKey(key))
+                    {
+                        Header.T2File[i].Name = hashes[key];
+                    }
+                }
+            }
+
             RCFReader.Close();
             RCFReader2.Close();
             RCF.Close();
@@ -298,12 +336,11 @@ namespace RadcoreCementFile
             for (Int32 i = 0; i <= Header.Files - 1; i++)
             {
                 string check = Path;
-                string[] Folders = Header.T2File[i].Name.Split('\\');
+                string[] Folders = Header.T2File[i].Name.Replace('/','\\').Split('\\');
                 for (Int32 j = 0; j <= Folders.Length - 2; j++)
                 {
                     check += Folders[j] + @"\";
-                    if (!Directory.Exists(check))
-                        Directory.CreateDirectory(check);
+                    Directory.CreateDirectory(System.IO.Path.GetDirectoryName(check));
                 }
                 check += Folders[Folders.Length - 1];
                 //Console.WriteLine("RCF Extract: " + Folders[Folders.Length - 1] + " " + (i + 1).ToString() + @"\" + Header.Files.ToString());

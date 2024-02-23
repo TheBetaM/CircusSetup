@@ -406,7 +406,7 @@ namespace CircusSetup
                     sfd2.Filter = "All files|*.*";
                     if (sfd2.ShowDialog() == true)
                     {
-                        //CementFile.ExtractRCF(sfd2.FileName);
+                        CementFile.ExtractRCF(System.IO.Path.GetDirectoryName(sfd2.FileName));
                     }
                 }
                 else if (((TreeViewItem)treeView.SelectedItem).Tag is RCF.RCF_TABLE2 item)
@@ -485,7 +485,7 @@ namespace CircusSetup
 
         private void batchTestButton_Click(object sender, RoutedEventArgs e)
         {
-            return;
+            //return;
             string path = "";
 
             List<string> paths = new List<string>();

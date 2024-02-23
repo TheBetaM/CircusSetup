@@ -7,8 +7,8 @@ using Pure3D.Chunks;
 
 namespace Pure3D.Chunks
 {
-    [ChunkType(0x5432104)]
-    public class CameraDataGroup : Chunk
+    [ChunkType(0x5432106)]
+    public class CameraDataGroup : Named
     {
         public uint ItemCount;
 
@@ -18,42 +18,18 @@ namespace Pure3D.Chunks
 
         public override void ReadHeader(BinaryReader reader, long length)
         {
+            base.ReadHeader(reader, length);
             ItemCount = reader.ReadUInt32();
         }
 
         public override void WriteHeader(BinaryWriter writer)
         {
-            writer.Write(ItemCount);
+            throw new System.NotImplementedException();
         }
 
         public override string ToString()
         {
-            return $"CameraDataGroup: {ItemCount}";
-        }
-    }
-
-    [ChunkType(0x5432107)]
-    public class CameraDataGroupHeader : Chunk
-    {
-        public uint ItemCount;
-
-        public CameraDataGroupHeader(File file, uint type) : base(file, type)
-        {
-        }
-
-        public override void ReadHeader(BinaryReader reader, long length)
-        {
-            ItemCount = reader.ReadUInt32();
-        }
-
-        public override void WriteHeader(BinaryWriter writer)
-        {
-            writer.Write(ItemCount);
-        }
-
-        public override string ToString()
-        {
-            return $"CameraDataGroupHeader: {ItemCount}";
+            return $"Camera Group {Name}: {ItemCount} items";
         }
     }
 }

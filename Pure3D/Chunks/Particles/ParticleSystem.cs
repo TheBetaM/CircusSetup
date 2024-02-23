@@ -2,6 +2,7 @@
 using System.IO;
 using Pure3D;
 using Pure3D.Chunks;
+using CircusSetup;
 
 namespace Pure3D.Chunks
 {
@@ -52,6 +53,16 @@ namespace Pure3D.Chunks
         public override string ToString()
         {
             return $"Particle System: {Name}";
+        }
+
+        public override void OnGodotExport(string path)
+        {
+            string pathDir = System.IO.Path.GetDirectoryName(path) + "\\";
+            string outName = pathDir + $"{Name}.tscn";
+            if (System.IO.File.Exists(outName)) return;
+
+            GodotSceneFileCircus scene = GodotSceneFileCircus.Create(Name);
+            scene.WriteToFile(outName);
         }
     }
 }

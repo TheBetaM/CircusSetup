@@ -15,7 +15,6 @@ namespace Pure3D.Chunks
         public int Version;
         public int UnkParam;
         public int VifSize;
-        bool HasComprPos;
         public uint PSP_MeshType;
 
         public NativeVertexList(File file, uint type) : base(file, type)
@@ -36,13 +35,17 @@ namespace Pure3D.Chunks
             Lines.AppendLine($"Header: 0x{Version:X8}");
             Lines.AppendLine($"Param: 0x{UnkParam:X8}");
             Lines.AppendLine($"VifSize: 0x{VifSize:X8}");
-            Lines.AppendLine($"PSP Compressed Positions: {HasComprPos}");
-            Lines.AppendLine($"PSP Native Mesh Type: 0x{PSP_MeshType:X8}");
+            if (Version == 0x00040001)
+            {
+                Lines.AppendLine($"PSP Native Mesh Type: 0x{PSP_MeshType:X8}");
+            }
             Lines.AppendLine($"Length: {Data.Length}");
             Lines.AppendLine(Data.ToLine());
 
             return Lines.ToString();
         }
+
+        public static List<uint> TypeErrors = new List<uint>();
 
         public override void ReadHeader(BinaryReader reader, long length)
         {
@@ -71,19 +74,29 @@ namespace Pure3D.Chunks
                 {
                     using (var preader = new BinaryReader(stream))
                     {
+                        bool err = true;
                         try {
                             ReadPSP(preader);
+                            err = false;
                         }
                         catch {
                             var prim = (PrimitiveGroup)Parent;
                             var item = (Named)prim.Parent;
                             Console.WriteLine($"FAILED PSP MODEL LONG! {PSP_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PSP_MeshType);
                         }
                         if (stream.Position != stream.Length)
                         {
                             var prim = (PrimitiveGroup)Parent;
                             var item = (Named)prim.Parent;
                             Console.WriteLine($"FAILED PSP MODEL SHORT! {PSP_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PSP_MeshType);
+                        }
+                        if (TypeErrors.Contains(PSP_MeshType) && !err)
+                        {
+                            //var prim = (PrimitiveGroup)Parent;
+                            //var item = (Named)prim.Parent;
+                            //Console.WriteLine($"PSP MODEL DIDNT ERROR! {PSP_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
                         }
                     }
                 }
@@ -118,7 +131,6 @@ namespace Pure3D.Chunks
                 // PS2
                 reader.ReadBytes(8);
                 Data = reader.ReadBytes((int)length - 0x14);
-                //VifCode = reader.ReadBytes((int)length - 0x14);
                 Vertexes = CalculateData(Data);
             }
         }
@@ -127,11 +139,11 @@ namespace Pure3D.Chunks
         {
             var prim = (PrimitiveGroup)Parent;
             var matpal = prim.GetChild<MatrixPalette>();
-            uint UnkVal1 = reader.ReadUInt32();
+            uint UnkVal1 = reader.ReadUInt32(); // version? (3 or 4)
             uint Bitfield = reader.ReadUInt32();
 
-            bool HasUnk0 = (Bitfield & (1 << 0)) != 0; // OneByteUV? used only in Titans/MoM
-            //bool HasUnk1 = (Bitfield & (1 << 1)) != 0; // ? disabled only in Titans/MoM, when previous one is enabled
+            bool HasOneByteUV = (Bitfield & (1 << 0)) != 0; // used only in Titans/MoM
+            //bool HasTwoByteUV = (Bitfield & (1 << 1)) != 0; // disabled only in Titans/MoM, when previous one is enabled
             bool HasUnk2 = (Bitfield & (1 << 2)) != 0; // ?
             //bool HasUnk3 = (Bitfield & (1 << 3)) != 0; // always the same as previous one
 
@@ -152,36 +164,69 @@ namespace Pure3D.Chunks
 
             bool HasEightBoneIndices = (Bitfield & (1 << 16)) != 0;
 
-            HasComprPos = !UncompressedPositions;
             PSP_MeshType = Bitfield;
 
             uint VCount = reader.ReadUInt32();
             uint IndicesCount = 0;
             uint MatricesCount = prim.NumMatrices;
+            /*
+            if (MatricesCount % 2 != 0)
+            {
+                MatricesCount++;
+            }
+            */
             float UV_ScaleX = 1f;
             float UV_ScaleY = 1f;
             float UV_OffsetX = 0f;
             float UV_OffsetY = 0f;
+            float ModelScaleX = 1f;
+            float ModelScaleY = 1f;
+            float ModelScaleZ = 1f;
+            float ModelOffsetX = 0f;
+            float ModelOffsetY = 0f;
+            float ModelOffsetZ = 0f;
             if (VCount != prim.NumVertices)
             {
                 VCount = reader.ReadUInt32();
                 IndicesCount = reader.ReadUInt32();
-                reader.ReadBytes(0xC);
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
                 MatricesCount = reader.ReadUInt32();
-                reader.ReadBytes(0xC);
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
                 UV_ScaleX = reader.ReadSingle();
                 UV_ScaleY = reader.ReadSingle();
                 UV_OffsetX = reader.ReadSingle();
                 UV_OffsetY = reader.ReadSingle();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                reader.ReadBytes(0x64); // 25 floats
+                reader.ReadUInt32();
+                reader.ReadUInt32();
             }
             else
             {
                 IndicesCount = reader.ReadUInt32();
-                reader.ReadSingle();
-                reader.ReadSingle();
-                reader.ReadSingle();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
+                reader.ReadBytes(0x60); // 24 floats
+                reader.ReadUInt32();
+                reader.ReadUInt32();
             }
-            reader.ReadBytes(0x84);
 
             uint ExtraPadding = 4 - MatricesCount;
             if (HasEightBoneIndices)
@@ -195,10 +240,7 @@ namespace Pure3D.Chunks
             
             for (int i = 0; i < VCount; i++)
             {
-                Vertexes.Add(new VertexData());
-            }
-            for (int i = 0; i < VCount; i++)
-            {
+                var vert = new VertexData();
                 if (HasEightBoneIndices || HasFourBoneIndices)
                 {
                     int wpos = 0;
@@ -207,8 +249,8 @@ namespace Pure3D.Chunks
                         byte Wgt = reader.ReadByte();
                         if (Wgt != 0 && wpos < 4)
                         {
-                            Vertexes[i].JointIndexes[wpos] = a;
-                            Vertexes[i].Weights[wpos] = Wgt / 128f;
+                            vert.JointIndexes[wpos] = a;
+                            vert.Weights[wpos] = Wgt / 128f;
                             wpos++;
                         }
                     }
@@ -219,33 +261,31 @@ namespace Pure3D.Chunks
                 }
                 if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
                 {
-                    if (HasUnk0)
+                    if (HasOneByteUV)
                     {
-                        Vertexes[i].U = ((reader.ReadByte() / 128f) * UV_ScaleX) + UV_OffsetX;
-                        Vertexes[i].V = ((reader.ReadByte() / 128f) * UV_ScaleY) + UV_OffsetY;
-                        //Vertexes[i].U += reader.ReadByte() / 255f; // offsetX? up to 0xFF
-                        //Vertexes[i].V += reader.ReadByte() / 255f; // offsetY? up to 0xFF
+                        vert.U = ((reader.ReadByte() / 128f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadByte() / 128f) * UV_ScaleY) + UV_OffsetY;
                         reader.ReadByte();
                         reader.ReadByte();
                     }
                     else
                     {
-                        Vertexes[i].U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
-                        Vertexes[i].V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
+                        vert.U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
                     }
                 }
                 if (HasColors)
                 {
-                    Vertexes[i].R = reader.ReadByte();
-                    Vertexes[i].G = reader.ReadByte();
-                    Vertexes[i].B = reader.ReadByte();
-                    Vertexes[i].A = reader.ReadByte();
+                    vert.R = reader.ReadByte();
+                    vert.G = reader.ReadByte();
+                    vert.B = reader.ReadByte();
+                    vert.A = reader.ReadByte();
                 }
                 if (HasNormals)
                 {
-                    Vertexes[i].BNX = reader.ReadByte();
-                    Vertexes[i].BNY = reader.ReadByte();
-                    Vertexes[i].BNZ = reader.ReadByte();
+                    vert.BNX = reader.ReadByte();
+                    vert.BNY = reader.ReadByte();
+                    vert.BNZ = reader.ReadByte();
                     reader.ReadByte();
                 }
                 if (HasEightBoneIndices || HasFourBoneIndices)
@@ -257,21 +297,22 @@ namespace Pure3D.Chunks
                 }
                 if (!UncompressedPositions)
                 {
-                    //todo
                     short X = reader.ReadInt16();
                     short Y = reader.ReadInt16();
                     short Z = reader.ReadInt16();
                     short W = reader.ReadInt16();
-                    Vertexes[i].X = 0f;
-                    Vertexes[i].Y = 0f;
-                    Vertexes[i].Z = 0f;
+                    vert.X = (X / 32768f) * ModelScaleX + ModelOffsetX;
+                    vert.Y = (Y / 32768f) * ModelScaleY + ModelOffsetY;
+                    vert.Z = (Z / 32768f) * ModelScaleZ + ModelOffsetZ;
                 }
                 else
                 {
-                    Vertexes[i].X = reader.ReadSingle();
-                    Vertexes[i].Y = reader.ReadSingle();
-                    Vertexes[i].Z = reader.ReadSingle();
+                    // also add the model scale and offset?
+                    vert.X = reader.ReadSingle();
+                    vert.Y = reader.ReadSingle();
+                    vert.Z = reader.ReadSingle();
                 }
+                Vertexes.Add(vert);
             }
             if (HasByteIndices)
             {
@@ -499,7 +540,6 @@ namespace Pure3D.Chunks
         public class VertexData
         {
             public float X, Y, Z;
-            public float NX, NY, NZ;
             public float U, V;
             public byte R, G, B, A;
             public float[] Weights = new float[4];

@@ -10,7 +10,7 @@ namespace Pure3D.Chunks
     [ChunkType(0x5432103)]
     public class CameraDataItem : Chunk
     {
-        public uint ItemIndex;
+        public uint ItemIndex; // item ID can overlap between different groups
 
         public CameraDataItem(File file, uint type) : base(file, type)
         {
@@ -28,7 +28,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"CameraDataItem: {ItemIndex}";
+            return $"Camera Data Item ID: {ItemIndex}";
         }
     }
 }

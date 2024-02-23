@@ -487,12 +487,12 @@ namespace CircusSetup
                             var vert = natlist.Vertexes[v];
                             if (Sub.HasNormals)
                             {
-                                byte NX = (byte)(-vert.NX * 127);
-                                byte NY = (byte)(-vert.NY * 127);
-                                byte NZ = (byte)(-vert.NZ * 127);
-                                VertexData.Add(255); 
-                                VertexData.Add(NY); 
-                                VertexData.Add(NX); 
+                                byte NX = vert.BNX;
+                                byte NY = vert.BNY;
+                                byte NZ = vert.BNZ;
+                                VertexData.Add(255);
+                                VertexData.Add(NY);
+                                VertexData.Add(NX);
                                 VertexData.Add(NZ);
                             }
                             if (Sub.HasTangents)

@@ -32,14 +32,14 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"CameraDataVectorData1 {Name}";
+            return $"CameraVectorData1 {Name}";
         }
 
         public override string? ToDetails()
         {
             StringBuilder Lines = new();
 
-            Lines.AppendLine($"CameraDataVectorData");
+            Lines.AppendLine($"CameraVectorData {VectorData.Count}");
             for (int i = 0; i < VectorData.Count; i++)
             {
                 Lines.AppendLine($"#{i}: {VectorData[i]}");
@@ -58,7 +58,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"CameraDataVectorData2 {Name}";
+            return $"CameraVectorData2 {Name}";
         }
     }
 
@@ -71,7 +71,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"CameraDataVectorData3 {Name}";
+            return $"CameraVectorData3 {Name}";
         }
     }
 }
