@@ -12,9 +12,9 @@ namespace Pure3D.Chunks
     public class SkeletonCTTR : Named
     {
         public uint Version;
-        public uint NumJoints; // should be equal to # of children
-        public uint UnkData; // num of Skeleton Partition?
-        public uint UnkData1;
+        public uint NumJoints;
+        public uint PartitionCount;
+        public uint LimbCount;
 
         public SkeletonCTTR(File file, uint type) : base(file, type)
         {
@@ -26,8 +26,8 @@ namespace Pure3D.Chunks
             base.ReadHeader(reader, length);
             Version = reader.ReadUInt32();
             NumJoints = reader.ReadUInt32();
-            UnkData = reader.ReadUInt32();
-            UnkData1 = reader.ReadUInt32();
+            PartitionCount = reader.ReadUInt32();
+            LimbCount = reader.ReadUInt32();
         }
 
         public override void WriteHeader(BinaryWriter writer)
@@ -35,8 +35,8 @@ namespace Pure3D.Chunks
             base.WriteHeader(writer);
             writer.Write(Version);
             writer.Write(NumJoints);
-            writer.Write(UnkData);
-            writer.Write(UnkData1);
+            writer.Write(PartitionCount);
+            writer.Write(LimbCount);
         }
 
         public override string ToString()
@@ -51,8 +51,8 @@ namespace Pure3D.Chunks
             Lines.AppendLine($"Skeleton CTTR: {Name}");
             Lines.AppendLine($"Version: {Version}");
             Lines.AppendLine($"NumJoints: {NumJoints}");
-            Lines.AppendLine($"UnkData: {UnkData}");
-            Lines.AppendLine($"UnkData1: {UnkData1}");
+            Lines.AppendLine($"PartitionCount: {PartitionCount}");
+            Lines.AppendLine($"LimbCount: {LimbCount}");
 
             return Lines.ToString();
         }

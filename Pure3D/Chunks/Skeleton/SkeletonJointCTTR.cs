@@ -13,8 +13,13 @@ namespace Pure3D.Chunks
     {
         public uint SkeletonParent;
         public Matrix4x4 RestPose;
-        public byte[] Remain;
         public int ID;
+        public Vector3 UnkVec1 = new Vector3();
+        public Vector3 UnkVec2 = new Vector3();
+        public Vector3 UnkVec3 = new Vector3();
+        public Vector3 UnkVec4 = new Vector3();
+        public short UnkShort;
+        public int UnkInt;
 
         public SkeletonJointCTTR(File file, uint type) : base(file, type)
         {
@@ -22,13 +27,19 @@ namespace Pure3D.Chunks
 
         public override void ReadHeader(BinaryReader reader, long length)
         {
-            long startpos = reader.BaseStream.Position + length;
             base.ReadHeader(reader, length);
             SkeletonParent = reader.ReadUInt32();
             RestPose = Util.ReadMatrix(reader);
-            // Titans/MoM
-            long rest = startpos - reader.BaseStream.Position;
-            Remain = reader.ReadBytes((int)rest);
+            if (Parent is SkeletonCTTR skeleton && skeleton.Version != 0)
+            {
+                // Titans/MoM
+                UnkVec1 = Util.ReadVector3(reader);
+                UnkVec2 = Util.ReadVector3(reader);
+                UnkVec3 = Util.ReadVector3(reader);
+                UnkVec4 = Util.ReadVector3(reader);
+                UnkShort = reader.ReadInt16();
+                UnkInt = reader.ReadInt32();
+            }
             foreach (var check in Parent.GetChildren<SkeletonJointCTTR>())
             {
                 if (check == this)
@@ -75,6 +86,13 @@ namespace Pure3D.Chunks
             Lines.AppendLine($"Scale {scale}");
             Lines.AppendLine($"Rot {rot}");
             Lines.AppendLine($"Pos {pos}");
+
+            Lines.AppendLine($"UnkVec1 {UnkVec1}");
+            Lines.AppendLine($"UnkVec2 {UnkVec2}");
+            Lines.AppendLine($"UnkVec3 {UnkVec3}");
+            Lines.AppendLine($"UnkVec4 {UnkVec4}");
+            Lines.AppendLine($"Short {UnkShort}");
+            Lines.AppendLine($"Int {UnkInt}");
 
             return Lines.ToString();
         }

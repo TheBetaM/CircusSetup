@@ -13,7 +13,7 @@ namespace Pure3D.Chunks
         public uint Version;
         public uint NumberOfFrames;
         public string Parameter;
-        public short[,] Values; // Array of 3 (u)int16s
+        public short[,] Values; // Array of XYZ angles
         public ushort[] Frames;
 
         public QuaternionChannel2(File file, uint type) : base(file, type)
@@ -86,25 +86,6 @@ namespace Pure3D.Chunks
             {
                 Lines.AppendLine($"Frame{i}: {Frames[i]}");
             }
-            /*
-            for (int i = 0; i < Values.GetLength(0); i++)
-            {
-                //float angX = 180f * (Values[i, 0] / 32767f);
-                //float angY = 180f * (Values[i, 1] / 32767f);
-                //float angZ = 180f * (Values[i, 2] / 32767f);
-                float angX = (float)Math.PI * 0.5f * (Values[i, 0] / 32767f);
-                float angY = (float)Math.PI * 0.5f  * (Values[i, 1] / 32767f);
-                float angZ = (float)Math.PI * 0.5f  * (Values[i, 2] / 32767f);
-                Lines.AppendLine($"Values{i}: {Values[i,0]} {Values[i,1]} {Values[i,2]}");// | {angX} {angY} {angZ}");
-                Quaternion quat1 = new Quaternion(angX, angY, angZ, 1f);
-                float ang2X = (float)Math.PI * 1f * (Values[i, 0] / 32767f);
-                float ang2Y = (float)Math.PI * 1f * (Values[i, 1] / 32767f);
-                float ang2Z = (float)Math.PI * 1f * (Values[i, 2] / 32767f);
-                Quaternion quat2 = Quaternion.CreateFromYawPitchRoll(ang2Y, ang2X, ang2Z);
-                Lines.AppendLine($"Quat1{i}: {quat1.X} {quat1.Y} {quat1.Z} {quat1.W}");
-                Lines.AppendLine($"Quat2{i}: {quat2.X} {quat2.Y} {quat2.Z} {quat2.W}");
-            }
-            */
 
             return Lines.ToString();
         }

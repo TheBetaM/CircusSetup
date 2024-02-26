@@ -8,10 +8,11 @@ namespace Pure3D.Chunks
     [ChunkType(0x121201)]
     public class FrameController : Named
     {
-        public uint UnkInt1; // autoplay?
-        public uint UnkInt2;
-        public uint UnkInt3; // count?
-        public string Parameter;
+        public uint Version;
+        public string SubType;
+        public uint FrameOffset;
+        public string AnimParameter;
+        public string TargetParameter;
 
         public string ModelName;
         public ulong ModelName_padding;
@@ -25,11 +26,12 @@ namespace Pure3D.Chunks
 
         public override void ReadHeader(BinaryReader reader, long length)
         {
-            UnkInt1 = reader.ReadUInt32();
+            Version = reader.ReadUInt32();
             base.ReadHeader(reader, length);
-            Parameter = Encoding.ASCII.GetString(reader.ReadBytes(8));
-            UnkInt2 = reader.ReadUInt32();
-            UnkInt3 = reader.ReadUInt32();
+            AnimParameter = Encoding.ASCII.GetString(reader.ReadBytes(4));
+            TargetParameter = Encoding.ASCII.GetString(reader.ReadBytes(4));
+            SubType = Encoding.ASCII.GetString(reader.ReadBytes(4));
+            FrameOffset = reader.ReadUInt32();
             ModelName = Util.ReadString(reader, ref ModelName_padding);
             AnimName = Util.ReadString(reader, ref AnimName_padding);
         }
@@ -41,7 +43,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Frame Controller: {Parameter} {Name}";
+            return $"Frame Controller: {AnimParameter} {TargetParameter} {Name}";
         }
 
         public override string? ToDetails()
@@ -51,8 +53,11 @@ namespace Pure3D.Chunks
             Lines.AppendLine($"Frame Controller {Name}");
             Lines.AppendLine($"Model/Object: {ModelName}");
             Lines.AppendLine($"Anim: {AnimName}");
-            Lines.AppendLine($"Parameter: {Parameter}");
-            Lines.AppendLine($"Ints: {UnkInt1} {UnkInt2} {UnkInt3}");
+            Lines.AppendLine($"Anim Parameter: {AnimParameter}");
+            Lines.AppendLine($"Target Parameter: {TargetParameter}");
+            Lines.AppendLine($"FrameOffset: {FrameOffset}");
+            Lines.AppendLine($"SubType: {SubType}");
+            Lines.AppendLine($"Version: {Version}");
 
             return Lines.ToString();
         }

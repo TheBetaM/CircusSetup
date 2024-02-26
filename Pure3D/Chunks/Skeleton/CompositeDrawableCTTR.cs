@@ -38,8 +38,8 @@ namespace Pure3D.Chunks
 
             Lines.AppendLine($"Composite Drawable CTTR: {Name}");
             Lines.AppendLine($"SkeletonName: {SkeletonName}");
-            Lines.AppendLine($"UnkInt1: {UnkInt1}");
-            Lines.AppendLine($"UnkInt2: {UnkInt2}");
+            Lines.AppendLine($"Version: {UnkInt1}");
+            Lines.AppendLine($"Primitive Count: {UnkInt2}");
 
             return Lines.ToString();
         }

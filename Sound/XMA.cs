@@ -38,12 +38,17 @@ namespace XMA_Audio
                     reader.BaseStream.Position = 0xC + 0x0C;
                     XMA_NumSamples = reader.ReadUInt32();
                 }
-                reader.BaseStream.Position = 0xC + XMA_ChunkSize + XMA_SeekSize;
+                reader.BaseStream.Position = 0x8 + XMA_ChunkSize + XMA_SeekSize;
+                uint XMA_Duration = reader.ReadUInt32();
                 // set skip samples to 576?
+                
 
                 // Decoding audio data
-
-
+                //while (reader.BaseStream.Position < reader.BaseStream.Length)
+                //{
+                //    byte[] Data = reader.ReadBytes(0x400);
+                //    int Duration = (Data[0] >> 2) * 512;
+                //}
 
 
                 outBuff = pcmStream.ToArray();

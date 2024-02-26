@@ -451,7 +451,7 @@ namespace Pure3D.Chunks
                                 if (psp.Colors.Count == 0) return;
                                 foreach (var color in psp.Colors)
                                 {
-                                    tex.Add(Color.FromArgb(color.A, color.R, color.G, color.B));
+                                    tex.Add(Color.FromArgb(color.A, color.B, color.G, color.R));
                                 }
                             }
                         }

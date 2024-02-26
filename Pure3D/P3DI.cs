@@ -38,9 +38,19 @@ namespace Pure3D
             List<ByteColour> palette = new List<ByteColour>();
             if (PaletteSize != 0)
             {
-                for (int i = 0; i < PaletteSize / 4; i++)
+                if (Type != 18)
                 {
-                    palette.Add(Util.ReadColour(reader));
+                    for (int i = 0; i < PaletteSize / 4; i++)
+                    {
+                        palette.Add(Util.ReadColour(reader));
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < PaletteSize / 2; i++)
+                    {
+                        palette.Add(Util.ReadColour2Byte(reader));
+                    }
                 }
             }
             RawData = reader.ReadBytes(ImageSize);
@@ -187,6 +197,28 @@ namespace Pure3D
                 case 18:
                     {
                         // Gamecube/Wii 4bit/8bit
+                        Colors.Add(palette[0]);
+                        for (int i = 0; i < Width * Height; i++)
+                        {
+                            RawColors[(i * 4) + 0] = palette[RawData[i]].R;
+                            RawColors[(i * 4) + 1] = palette[RawData[i]].G;
+                            RawColors[(i * 4) + 2] = palette[RawData[i]].B;
+                            RawColors[(i * 4) + 3] = palette[RawData[i]].A;
+                        }
+                        break;
+                    }
+                case 20:
+                    {
+                        // Gamecube/Wii 32bit
+                        Colors.Add(new ByteColour(255, 255, 255, 255));
+                        for (int i = 0; i < Width * Height; i++)
+                        {
+                            byte Color = RawData[i];
+                            RawColors[(i * 4) + 0] = (byte)((Color >> 12) & 0x4);
+                            RawColors[(i * 4) + 1] = (byte)((Color >> 8) & 0x4);
+                            RawColors[(i * 4) + 2] = (byte)((Color >> 4) & 0x4);
+                            RawColors[(i * 4) + 3] = (byte)(Color & 0x4);
+                        }
                         break;
                     }
             }

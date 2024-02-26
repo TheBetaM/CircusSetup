@@ -10,14 +10,14 @@ namespace Pure3D.Chunks
     [ChunkType(0x17006)]
     public class BillboardQuadGroupCTTR : Named
     {
-        public uint UnkInt1;
+        public uint Version;
         public string MaterialName;
         public ulong MaterialName_padding;
-        public uint UnkInt2;
-        public uint UnkInt3;
-        public uint UnkInt4;
-        public uint UnkInt5;
-        public uint UnkInt6;
+        public uint CutOffEnabled;
+        public uint ZTest;
+        public uint ZWrite;
+        public uint Fog;
+        public uint QuadCount;
         public BillboardQuadGroupCTTR(File file, uint type) : base(file, type)
         {
 
@@ -25,14 +25,14 @@ namespace Pure3D.Chunks
 
         public override void ReadHeader(BinaryReader reader, long length)
         {
-            UnkInt1 = reader.ReadUInt32();
+            Version = reader.ReadUInt32();
             base.ReadHeader(reader, length);
             MaterialName = Util.ReadString(reader, ref MaterialName_padding);
-            UnkInt2 = reader.ReadUInt32();
-            UnkInt3 = reader.ReadUInt32();
-            UnkInt4 = reader.ReadUInt32();
-            UnkInt5 = reader.ReadUInt32();
-            UnkInt6 = reader.ReadUInt32();
+            CutOffEnabled = reader.ReadUInt32();
+            ZTest = reader.ReadUInt32();
+            ZWrite = reader.ReadUInt32();
+            Fog = reader.ReadUInt32();
+            QuadCount = reader.ReadUInt32();
         }
 
         public override void WriteHeader(BinaryWriter writer)
@@ -43,6 +43,22 @@ namespace Pure3D.Chunks
         public override string ToString()
         {
             return $"Billboard Quad Group: {Name}";
+        }
+
+        public override string? ToDetails()
+        {
+            StringBuilder Lines = new();
+
+            Lines.AppendLine($"Billboard Quad Group CTTR: {Name}");
+            Lines.AppendLine($"Version: {Version}");
+            Lines.AppendLine($"Shader: {MaterialName}");
+            Lines.AppendLine($"CutOffEnabled: {CutOffEnabled}");
+            Lines.AppendLine($"ZTest: {ZTest}");
+            Lines.AppendLine($"ZWrite: {ZWrite}");
+            Lines.AppendLine($"Fog: {Fog}");
+            Lines.AppendLine($"QuadCount: {QuadCount}");
+
+            return Lines.ToString();
         }
 
         public override void OnGodotExport(string path)

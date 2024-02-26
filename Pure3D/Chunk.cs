@@ -178,7 +178,7 @@ namespace Pure3D
 
         public abstract void WriteHeader(BinaryWriter writer);
 
-        protected static Dictionary<uint, Type> chunkTypeDictionary = null;
+        public static Dictionary<uint, Type> chunkTypeDictionary = null;
         public static Chunk NewChunkFromType(File file, uint type)
         {
             // cache the list

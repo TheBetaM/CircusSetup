@@ -32,20 +32,6 @@ namespace Pure3D.Chunks
         }
     }
 
-    [ChunkType(0x1002B)]
-    public class MeshDataUnk5 : Unknown
-    {
-        public MeshDataUnk5(File file, uint type) : base(file, type)
-        {
-
-        }
-
-        public override string ToString()
-        {
-            return $"MeshDataUnk5";
-        }
-    }
-
     [ChunkType(0x1002C)]
     public class MeshDataUnk6 : Unknown
     {

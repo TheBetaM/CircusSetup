@@ -222,6 +222,31 @@ namespace Pure3D
             return vector;
         }
 
+        public static ByteColour ReadColour2Byte(BinaryReader reader)
+        {
+            ByteColour vector = new ByteColour();
+            uint data = reader.ReadUInt16();
+            byte Low = (byte)(data & 0xF);
+            byte High = (byte)(data >> 8);
+
+            if (data < 0x8000)
+            {
+                vector.B = (byte)(data & 0x1F);
+                vector.G = (byte)((data >> 5) & 0x1F);
+                vector.R = (byte)((data >> 10) & 0x1F);
+                vector.A = 255;
+            }
+            else
+            {
+                High--;
+                vector.B = (byte)(Low & 0xF);
+                vector.G = (byte)(Low >> 4);
+                vector.R = (byte)(High & 0xF);
+                vector.A = (byte)(High >> 4);
+            }
+            return vector;
+        }
+
         public static void WriteColour(BinaryWriter writer, ByteColour vector)
         {
             writer.Write(vector.R);
@@ -289,6 +314,13 @@ namespace Pure3D
             var data = base.ReadBytes(2);
             Array.Reverse(data);
             return BitConverter.ToInt16(data, 0);
+        }
+
+        public override UInt16 ReadUInt16()
+        {
+            var data = base.ReadBytes(2);
+            Array.Reverse(data);
+            return BitConverter.ToUInt16(data, 0);
         }
 
         public override Int64 ReadInt64()
