@@ -222,7 +222,7 @@ namespace Pure3D.Chunks
                 UV_OffsetX = reader.ReadSingle();
                 UV_OffsetY = reader.ReadSingle();
             }
-            reader.ReadBytes(0x64); // 24 floats (bounding box 8x Vector3)
+            reader.ReadBytes(0x60); // 24 floats (bounding box 8x Vector3)
             reader.ReadUInt32(); // vertex data offset
             reader.ReadUInt32(); // index data offset
 
