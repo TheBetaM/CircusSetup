@@ -5,13 +5,13 @@ using System.Text;
 
 namespace Pure3D.Chunks
 {
-    [ChunkType(0x1000102)]
-    public class Reverb3 : Chunk
+    [ChunkType(0x1000105)]
+    public class ListenerEffectFreeVerb : Chunk
     {
         public string Name;
         public List<float> Params = new List<float>();
 
-        public Reverb3(File file, uint type) : base(file, type)
+        public ListenerEffectFreeVerb(File file, uint type) : base(file, type)
         {
         }
 
@@ -20,7 +20,7 @@ namespace Pure3D.Chunks
             int NameLength = reader.ReadInt32();
             Name = new string(reader.ReadChars(NameLength));
             reader.ReadByte();
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 7; i++)
             {
                 Params.Add(reader.ReadSingle());
             }
@@ -39,7 +39,7 @@ namespace Pure3D.Chunks
 
         public override string ToString()
         {
-            return $"Reverb3 {Name}";
+            return $"ListenerEffectFreeVerb {Name}";
         }
     }
 }

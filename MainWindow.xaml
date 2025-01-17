@@ -57,6 +57,32 @@
                         
                     </Image>
                 </TabItem>
+                <TabItem Header="Text Hash Calculator" >
+                    <Grid Background="White">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition Height="28"></RowDefinition>
+                            <RowDefinition></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <Label x:Name="calculatorLabel1" Grid.Row="0">Text:</Label>
+                        <TextBox x:Name="calculatorTextBox1" Grid.Row="1" TextChanged="calculatorTextBox1_TextChanged"></TextBox>
+                        <Label x:Name="calculatorLabel2" Grid.Row="2">Modulo:</Label>
+                        <TextBox x:Name="calculatorTextBox2" Grid.Row="3" TextChanged="calculatorTextBox2_TextChanged"></TextBox>
+                        <Label x:Name="calculatorLabel3" Grid.Row="4">Hash: </Label>
+                        <Label x:Name="calculatorLabel4" Grid.Row="5">Label 2</Label>
+                        <Label x:Name="calculatorLabel5" Grid.Row="6">Hash:</Label>
+                        <TextBox x:Name="calculatorTextBox3" Grid.Row="7" TextChanged="calculatorTextBox3_TextChanged"></TextBox>
+                        <Button x:Name="calculatorGuessButton" Grid.Row="8" Click="calculatorGuessButton_Click">Try To Guess Text From Hash</Button>
+                        <TextBox x:Name="calculatorTextBox4" Grid.Row="9"></TextBox>
+                    </Grid>
+                </TabItem>
                 
             </TabControl>
             

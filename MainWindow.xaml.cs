@@ -36,6 +36,8 @@ namespace CircusSetup
         bool ModeRCF = false;
         bool ModeRSD = false;
         bool ModeScript = false;
+        uint CalculatorModulo = 0;
+        uint CalculatorGuessHash = 0;
 
         public static List<Animation> AnimCache = new List<Animation>();
 
@@ -282,117 +284,22 @@ namespace CircusSetup
             if (ModeRSD)
             {
                 if (treeView.SelectedItem == null) return;
-                if (((TreeViewItem)treeView.SelectedItem).Tag is RSD)
+                if (((TreeViewItem)treeView.SelectedItem).Tag is RSD rsdfile)
                 {
                     SaveFileDialog sfd2 = new SaveFileDialog();
                     if (Util.ExportToGodot)
                     {
-                        sfd2.FileName = "sound.res";
+                        sfd2.FileName = $"{rsdfile.ShortName.Split('\\').Last()}.res";
                         sfd2.Filter = "RES files|*.res";
                     }
                     else
                     {
-                        sfd2.FileName = "sound.wav";
+                        sfd2.FileName = $"{rsdfile.ShortName.Split('\\').Last()}.wav";
                         sfd2.Filter = "WAV files|*.wav";
                     }
                     if (sfd2.ShowDialog() == true)
                     {
-                        if (!Util.ExportToGodot)
-                        {
-                            byte[] SoundData = new byte[0];
-                            string name1 = sfd2.FileName;
-                            short channels = 1;
-                            if (RSD.Channels > 1) channels = 2;
-                            uint tracks = (RSD.Channels / 2);
-                            switch (RSD.CodecString)
-                            {
-                                case "XADP": // XBOX IMA ADPCM
-                                    SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
-                                    break;
-                                case "XMA ": // XBOX 360 XMA 
-                                    SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
-                                    break;
-                                case "VAG ": // PS2/PSP VAG ADPCM
-                                    if (RSD.Channels >= 4)
-                                    {
-                                        SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, 0, RSD.Channels);
-                                    }
-                                    else if (RSD.Channels == 2)
-                                        SoundData = ADPCM.ToPCMStereo(RSD.Data, RSD.Data.Length, (int)RSD.Interleave);
-                                    else if (RSD.Channels == 1)
-                                        SoundData = ADPCM.ToPCMMono(RSD.Data, RSD.Data.Length);
-                                    break;
-                                case "AT3+": // PSP ATRAC3+
-                                    SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
-                                    break;
-                                case "RADP": // GCN/WII IMA ADPCM
-                                    break;
-                                case "WADP": // WII NGC DSP
-                                    break;
-                                default:
-                                    break;
-                            }
-                            SoundData = RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
-                            FileStream file = new FileStream(name1, FileMode.Create, FileAccess.Write);
-                            BinaryWriter writer = new BinaryWriter(file);
-                            writer.Write(SoundData);
-                            writer.Close();
-                            
-                            if (tracks > 1 && tracks < 32)
-                            {
-                                for (int t = 1; t < tracks; t++)
-                                {
-                                    string name2 = sfd2.FileName.Replace(".wav", $"_{t}.wav");
-                                    switch (RSD.CodecString)
-                                    {
-                                        case "XADP": // XBOX IMA ADPCM
-                                            SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
-                                            break;
-                                        case "XMA ": // XBOX 360 XMA 
-                                            SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
-                                            break;
-                                        case "VAG ": // PS2/PSP VAG ADPCM
-                                            SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, t, RSD.Channels);
-                                            break;
-                                        case "AT3+": // PSP ATRAC3+
-                                            SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
-                                            break;
-                                        case "RADP": // GCN/WII IMA ADPCM
-                                            break;
-                                        case "WADP": // WII NGC DSP
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                    SoundData = RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
-                                    FileStream file2 = new FileStream(name2, FileMode.Create, FileAccess.Write);
-                                    BinaryWriter writer2 = new BinaryWriter(file2);
-                                    writer2.Write(SoundData);
-                                    writer2.Close();
-                                }
-                            }
-                        }
-                        else
-                        {
-                            string outPath = System.IO.Path.GetDirectoryName(sfd2.FileName) + "\\Sounds\\";
-                            outPath += RSD.ShortName + ".res";
-                            string dirPath = System.IO.Path.GetDirectoryName(outPath);
-                            Directory.CreateDirectory(dirPath);
-
-                            GodotBinaryAudioStreamWAV wav1 = new GodotBinaryAudioStreamWAV(RSD, false, 0);
-                            wav1.WriteToFile(outPath);
-
-                            uint tracks = (RSD.Channels / 2);
-                            if (tracks > 1 && tracks < 32)
-                            {
-                                for (int t = 1; t < tracks; t++)
-                                {
-                                    string name2 = outPath.Replace(".res", $"_{t}.res");
-                                    GodotBinaryAudioStreamWAV wav2 = new GodotBinaryAudioStreamWAV(RSD, false, t);
-                                    wav2.WriteToFile(name2);
-                                }
-                            }
-                        }
+                        ExportRSD(sfd2.FileName);
                     }
                 }
                 return;
@@ -496,7 +403,8 @@ namespace CircusSetup
             }
             List<string> errors = new List<string>();
 
-            BatchTest(paths, errors);
+            //BatchTest(paths, errors);
+            BatchTestRSD(paths, errors);
 
             Console.WriteLine($"Batch testing done. Checked {paths.Count} files. Errors: {errors.Count}");
             for (int i = 0; i < errors.Count; i++)
@@ -513,7 +421,7 @@ namespace CircusSetup
             }
             foreach (FileInfo file in dir.EnumerateFiles())
             {
-                if (file.Extension.ToLower().Contains("p3d"))
+                if (file.Extension.ToLower().Contains("rsd"))
                 {
                     paths.Add(file.FullName);
                 }
@@ -581,6 +489,26 @@ namespace CircusSetup
                 }
                 Recursive_CheckUnk(item, ref UnkTypes, ref UnkTypesFiles, file);
             }
+        }
+
+        void BatchTestRSD(List<string> paths, List<string> errors)
+        {
+            for (int p = 0; p < paths.Count; p++)
+            {
+                try
+                {
+                    RSD = new();
+                    RSD.Load(paths[p]);
+                    Debug.WriteLine($"{paths[p].Split('\\').Last()} - {RSD.Name}");
+                    Console.WriteLine($"{paths[p].Split('\\').Last()} - {RSD.Name}");
+                    //ExportRSD(paths[p]);
+                }
+                catch
+                {
+                    errors.Add(paths[p]);
+                }
+            }
+            RSD = null;
         }
 
         void LoadTreeRCF()
@@ -655,5 +583,236 @@ namespace CircusSetup
             demoModeToggleButton.Header = $"Is Demo {text}";
         }
 
+        void ExportRSD(string path)
+        {
+            if (!Util.ExportToGodot)
+            {
+                string outPath = System.IO.Path.GetDirectoryName(path) + "\\Sounds\\";
+                outPath += RSD.ShortName + ".wav";
+                string dirPath = System.IO.Path.GetDirectoryName(outPath);
+                Directory.CreateDirectory(dirPath);
+
+                byte[] SoundData = new byte[0];
+                string name1 = outPath;
+                short channels = 1;
+                if (RSD.Channels > 1) channels = 2;
+                uint tracks = (RSD.Channels / 2);
+                switch (RSD.CodecString)
+                {
+                    case "XADP": // XBOX IMA ADPCM
+                        SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
+                        break;
+                    case "XMA ": // XBOX 360 XMA 
+                        SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
+                        break;
+                    case "VAG ": // PS2/PSP VAG ADPCM
+                        if (RSD.Channels >= 4)
+                        {
+                            SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, 0, RSD.Channels);
+                        }
+                        else if (RSD.Channels == 2)
+                            SoundData = ADPCM.ToPCMStereo(RSD.Data, RSD.Data.Length, (int)RSD.Interleave);
+                        else if (RSD.Channels == 1)
+                            SoundData = ADPCM.ToPCMMono(RSD.Data, RSD.Data.Length);
+                        break;
+                    case "AT3+": // PSP ATRAC3+
+                        SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
+                        break;
+                    case "RADP": // GCN/WII IMA ADPCM
+                        break;
+                    case "WADP": // WII NGC DSP
+                        break;
+                    case "PCM ": // WAV PCM
+                        SoundData = RSD.Data;
+                        break;
+                    default:
+                        break;
+                }
+                SoundData = RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
+                FileStream file = new FileStream(name1, FileMode.Create, FileAccess.Write);
+                BinaryWriter writer = new BinaryWriter(file);
+                writer.Write(SoundData);
+                writer.Close();
+                
+                if (tracks > 1 && tracks < 32)
+                {
+                    for (int t = 1; t < tracks; t++)
+                    {
+                        string name2 = outPath.Replace(".wav", $"_{t}.wav");
+                        switch (RSD.CodecString)
+                        {
+                            case "XADP": // XBOX IMA ADPCM
+                                SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                break;
+                            case "XMA ": // XBOX 360 XMA 
+                                SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                break;
+                            case "VAG ": // PS2/PSP VAG ADPCM
+                                SoundData = ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, t, RSD.Channels);
+                                break;
+                            case "AT3+": // PSP ATRAC3+
+                                SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                break;
+                            case "RADP": // GCN/WII IMA ADPCM
+                                break;
+                            case "WADP": // WII NGC DSP
+                                break;
+                            case "PCM ": // WAV PCM
+                                SoundData = RSD.Data;
+                                break;
+                            default:
+                                break;
+                        }
+                        SoundData = RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
+                        FileStream file2 = new FileStream(name2, FileMode.Create, FileAccess.Write);
+                        BinaryWriter writer2 = new BinaryWriter(file2);
+                        writer2.Write(SoundData);
+                        writer2.Close();
+                    }
+                }
+            }
+            else
+            {
+                string outPath = System.IO.Path.GetDirectoryName(path) + "\\Sounds\\";
+                outPath += RSD.ShortName + ".res";
+                string dirPath = System.IO.Path.GetDirectoryName(outPath);
+                Directory.CreateDirectory(dirPath);
+
+                GodotBinaryAudioStreamWAV wav1 = new GodotBinaryAudioStreamWAV(RSD, false, 0);
+                wav1.WriteToFile(outPath);
+
+                uint tracks = (RSD.Channels / 2);
+                if (tracks > 1 && tracks < 32)
+                {
+                    for (int t = 1; t < tracks; t++)
+                    {
+                        string name2 = outPath.Replace(".res", $"_{t}.res");
+                        GodotBinaryAudioStreamWAV wav2 = new GodotBinaryAudioStreamWAV(RSD, false, t);
+                        wav2.WriteToFile(name2);
+                    }
+                }
+            }
+        }
+
+        private void calculatorTextBox1_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(calculatorTextBox2.Text)) return;
+            calculatorLabel3.Content = "";
+            calculatorLabel4.Content = "";
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(calculatorTextBox1.Text))
+                {
+                    calculatorLabel3.Content = $"Hash: {CalcGetHash(calculatorTextBox1.Text)}";
+                    return;
+                }
+            }
+            catch
+            {
+                calculatorLabel4.Content = "Error";
+            }
+        }
+
+        private void calculatorTextBox2_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            calculatorLabel3.Content = "";
+            calculatorLabel4.Content = "";
+            if (string.IsNullOrWhiteSpace(calculatorTextBox2.Text)) return;
+            try
+            {
+                CalculatorModulo = uint.Parse(calculatorTextBox2.Text);
+                if (!string.IsNullOrWhiteSpace(calculatorTextBox1.Text))
+                {
+                    calculatorLabel3.Content = $"Hash: {CalcGetHash(calculatorTextBox1.Text)}";
+                    calculatorLabel4.Content = "";
+                    return;
+                }
+            }
+            catch
+            {
+                calculatorLabel4.Content = "Error";
+            }
+        }
+
+        private void calculatorTextBox3_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            calculatorLabel4.Content = "";
+            try
+            {
+                CalculatorGuessHash = uint.Parse(calculatorTextBox3.Text);
+            }
+            catch
+            {
+                calculatorLabel4.Content = "Error";
+            }
+        }
+
+        public uint CalcGetHash(string name)
+        {
+            uint Hash = 0;
+
+            for (int i = 0; i < name.Length; i++)
+            {
+                Hash = (64 * Hash + name[i]) % CalculatorModulo;
+            }
+
+            return Hash;
+        }
+
+        private void calculatorGuessButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(calculatorTextBox2.Text)) return;
+            if (string.IsNullOrWhiteSpace(calculatorTextBox3.Text)) return;
+            try
+            {
+                int Length = 1;
+                char[] chars = new char[20];
+                bool found = false;
+                List<string> Results = new List<string>();
+                while (Length < 20 && !found)
+                {
+                    NestedGuesser(chars, 0, Length, ref Results);
+                    if (Results.Count > 50) break;
+                    Length++;
+                }
+                if (Results.Count != 0)
+                {
+                    StringBuilder builder = new StringBuilder();
+                    builder.AppendLine("Results: (only a to z, first 50 matches)");
+                    foreach (var item in Results)
+                    {
+                        builder.AppendLine(item);
+                    }
+                    calculatorTextBox4.Text = builder.ToString();
+                }
+                else
+                {
+                    calculatorLabel4.Content = $"Failed to find text...";
+                }
+            }
+            catch
+            {
+                calculatorLabel4.Content = "Error";
+            }
+        }
+
+        void NestedGuesser(char[] chars, int ptr, int Length, ref List<string> Results)
+        {
+            chars[ptr] = 'a';
+            while (chars[ptr] < 123)
+            {
+                if (CalcGetHash(new string(chars).TrimEnd('\0')) == CalculatorGuessHash)
+                {
+                    Results.Add(new string(chars).TrimEnd('\0'));
+                    if (Results.Count > 50) return;
+                }
+                if (ptr < Length - 1)
+                {
+                    NestedGuesser(chars, ptr + 1, Length, ref Results);
+                    if (Results.Count > 50) return;
+                }
+                chars[ptr]++;
+            }
+        }
     }
 }

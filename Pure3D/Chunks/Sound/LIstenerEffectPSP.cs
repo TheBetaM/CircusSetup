@@ -5,14 +5,13 @@ using System.Text;
 
 namespace Pure3D.Chunks
 {
-    [ChunkType(0x1000106)]
-    public class Reverb7 : Chunk
+    [ChunkType(0x1000104)]
+    public class ListenerEffectPSP : Chunk
     {
         public string Name;
-        public uint UnkInt;
-        public float UnkFloat;
+        public List<float> Params = new List<float>();
 
-        public Reverb7(File file, uint type) : base(file, type)
+        public ListenerEffectPSP(File file, uint type) : base(file, type)
         {
         }
 
@@ -21,8 +20,10 @@ namespace Pure3D.Chunks
             int NameLength = reader.ReadInt32();
             Name = new string(reader.ReadChars(NameLength));
             reader.ReadByte();
-            UnkFloat = reader.ReadSingle();
-            UnkInt = reader.ReadUInt32();
+            for (int i = 0; i < 4; i++)
+            {
+                Params.Add(reader.ReadSingle());
+            }
         }
 
         public override void WriteHeader(BinaryWriter writer)
@@ -30,13 +31,15 @@ namespace Pure3D.Chunks
             writer.Write(Name.Length);
             writer.Write(Name.ToCharArray());
             writer.Write((byte)0);
-            writer.Write(UnkFloat);
-            writer.Write(UnkInt);
+            for (int i = 0; i < Params.Count; i++)
+            {
+                writer.Write(Params[i]);
+            }
         }
 
         public override string ToString()
         {
-            return $"Reverb7 {Name}";
+            return $"ListenerEffectPSP {Name}";
         }
     }
 }

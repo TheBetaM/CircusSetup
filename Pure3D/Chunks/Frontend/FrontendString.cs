@@ -22,6 +22,18 @@ namespace Pure3D.Chunks
         {
             BibleName = Util.ReadString(reader, ref BibleName_padding);
             BibleText = Util.ReadString(reader, ref BibleText_padding);
+            /*
+            if (File.RootChunk.GetChildByName<FrontendTextBible>(BibleName) != null)
+            {
+                var bible = File.RootChunk.GetChildByName<FrontendTextBible>(BibleName);
+                var lang = (FrontendLanguage)bible.Children[1];
+                uint hash = lang.GetHash(BibleText);
+                if (lang.Values.ContainsKey(hash))
+                    System.Console.WriteLine($"[{hash}] = \"{BibleText}\",");
+                else
+                    System.Console.WriteLine($"Failed to find [{hash}] = {BibleText},");
+            }
+            */
         }
 
         public override void WriteHeader(BinaryWriter writer)

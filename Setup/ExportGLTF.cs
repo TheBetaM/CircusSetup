@@ -743,7 +743,7 @@ namespace CircusSetup
                             var sampler = CurveSampler.CreateSampler(frames);
                             bone.SetRotationTrack(GroupName, sampler);
                         }
-                        else if (chan is QuaternionChannel3 quat4chan && quat4chan.Parameter == "ROT")
+                        else if (chan is QuaternionChannel4 quat4chan && quat4chan.Parameter == "ROT")
                         {
                             List<(float, Quaternion)> frames = new List<(float, Quaternion)>();
                             for (int i = 0; i < quat4chan.NumberOfFrames; i++)

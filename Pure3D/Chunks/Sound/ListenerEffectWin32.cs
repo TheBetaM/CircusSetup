@@ -5,13 +5,13 @@ using System.Text;
 
 namespace Pure3D.Chunks
 {
-    [ChunkType(0x1000104)]
-    public class Reverb5 : Chunk
+    [ChunkType(0x1000103)]
+    public class ListenerEffectWin32 : Chunk
     {
         public string Name;
-        public List<float> Params = new List<float>();
+        public uint UnkInt;
 
-        public Reverb5(File file, uint type) : base(file, type)
+        public ListenerEffectWin32(File file, uint type) : base(file, type)
         {
         }
 
@@ -20,10 +20,7 @@ namespace Pure3D.Chunks
             int NameLength = reader.ReadInt32();
             Name = new string(reader.ReadChars(NameLength));
             reader.ReadByte();
-            for (int i = 0; i < 4; i++)
-            {
-                Params.Add(reader.ReadSingle());
-            }
+            UnkInt = reader.ReadUInt32();
         }
 
         public override void WriteHeader(BinaryWriter writer)
@@ -31,15 +28,12 @@ namespace Pure3D.Chunks
             writer.Write(Name.Length);
             writer.Write(Name.ToCharArray());
             writer.Write((byte)0);
-            for (int i = 0; i < Params.Count; i++)
-            {
-                writer.Write(Params[i]);
-            }
+            writer.Write(UnkInt);
         }
 
         public override string ToString()
         {
-            return $"Reverb5 {Name}";
+            return $"ListenerEffectWin32 {Name}";
         }
     }
 }

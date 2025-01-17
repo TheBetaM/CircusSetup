@@ -343,13 +343,136 @@ namespace RadcoreCementFile
                     Directory.CreateDirectory(System.IO.Path.GetDirectoryName(check));
                 }
                 check += Folders[Folders.Length - 1];
-                //Console.WriteLine("RCF Extract: " + Folders[Folders.Length - 1] + " " + (i + 1).ToString() + @"\" + Header.Files.ToString());
-                FileStream File = new FileStream(check, FileMode.Create, FileAccess.Write);
-                BinaryWriter FileWriter = new BinaryWriter(File);
                 RCF.Position = Header.T1File[Header.T2File[i].Ref].Offset;
-                FileWriter.Write(RCFReader.ReadBytes((int)Header.T1File[Header.T2File[i].Ref].Size));
-                FileWriter.Close();
-                File.Close();
+                byte[] bytes = RCFReader.ReadBytes((int)Header.T1File[Header.T2File[i].Ref].Size);
+                if (check.ToLower().EndsWith(".rsd"))
+                {
+                    using (MemoryStream ms = new MemoryStream(bytes))
+                    {
+                        using (BinaryReader reader = new BinaryReader(ms))
+                        {
+                            Pure3D.RSD RSD = new Pure3D.RSD();
+                            RSD.Load(reader, bytes.Length);
+
+                            if (!Pure3D.Util.ExportToGodot)
+                            {
+                                string outPath = System.IO.Path.GetDirectoryName(check) + "\\Sounds\\";
+                                outPath += RSD.ShortName + ".wav";
+                                string dirPath = System.IO.Path.GetDirectoryName(outPath);
+                                Directory.CreateDirectory(dirPath);
+
+                                byte[] SoundData = new byte[0];
+                                string name1 = outPath;
+                                short channels = 1;
+                                if (RSD.Channels > 1) channels = 2;
+                                uint tracks = (RSD.Channels / 2);
+                                switch (RSD.CodecString)
+                                {
+                                    case "XADP": // XBOX IMA ADPCM
+                                        SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
+                                        break;
+                                    case "XMA ": // XBOX 360 XMA 
+                                        SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
+                                        break;
+                                    case "VAG ": // PS2/PSP VAG ADPCM
+                                        if (RSD.Channels >= 4)
+                                        {
+                                            SoundData = CircusSetup.ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, 0, RSD.Channels);
+                                        }
+                                        else if (RSD.Channels == 2)
+                                            SoundData = CircusSetup.ADPCM.ToPCMStereo(RSD.Data, RSD.Data.Length, (int)RSD.Interleave);
+                                        else if (RSD.Channels == 1)
+                                            SoundData = CircusSetup.ADPCM.ToPCMMono(RSD.Data, RSD.Data.Length);
+                                        break;
+                                    case "AT3+": // PSP ATRAC3+
+                                        SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, 0);
+                                        break;
+                                    case "RADP": // GCN/WII IMA ADPCM
+                                        break;
+                                    case "WADP": // WII NGC DSP
+                                        break;
+                                    case "PCM ": // WAV PCM
+                                        SoundData = RSD.Data;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                SoundData = CircusSetup.RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
+                                FileStream file = new FileStream(name1, FileMode.Create, FileAccess.Write);
+                                BinaryWriter writer = new BinaryWriter(file);
+                                writer.Write(SoundData);
+                                writer.Close();
+                                
+                                if (tracks > 1 && tracks < 32)
+                                {
+                                    for (int t = 1; t < tracks; t++)
+                                    {
+                                        string name2 = outPath.Replace(".wav", $"_{t}.wav");
+                                        switch (RSD.CodecString)
+                                        {
+                                            case "XADP": // XBOX IMA ADPCM
+                                                SoundData = IMA_ADPCM.IMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                                break;
+                                            case "XMA ": // XBOX 360 XMA 
+                                                SoundData = XMA_Audio.XMA_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                                break;
+                                            case "VAG ": // PS2/PSP VAG ADPCM
+                                                SoundData = CircusSetup.ADPCM.ToPCMQuad(RSD.Data, RSD.Data.Length, (int)RSD.Interleave, t, RSD.Channels);
+                                                break;
+                                            case "AT3+": // PSP ATRAC3+
+                                                SoundData = AT3Plus.AT3P_Decoder.Decode(RSD.Data, (int)RSD.Channels, t);
+                                                break;
+                                            case "RADP": // GCN/WII IMA ADPCM
+                                                break;
+                                            case "WADP": // WII NGC DSP
+                                                break;
+                                            case "PCM ": // WAV PCM
+                                                SoundData = RSD.Data;
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                        SoundData = CircusSetup.RIFF.SaveRiff(SoundData, channels, (int)RSD.SampleRate);
+                                        FileStream file2 = new FileStream(name2, FileMode.Create, FileAccess.Write);
+                                        BinaryWriter writer2 = new BinaryWriter(file2);
+                                        writer2.Write(SoundData);
+                                        writer2.Close();
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                string outPath = System.IO.Path.GetDirectoryName(check) + "\\Sounds\\";
+                                outPath += RSD.ShortName + ".res";
+                                string dirPath = System.IO.Path.GetDirectoryName(outPath);
+                                Directory.CreateDirectory(dirPath);
+
+                                CircusSetup.GodotBinaryAudioStreamWAV wav1 = new CircusSetup.GodotBinaryAudioStreamWAV(RSD, false, 0);
+                                wav1.WriteToFile(outPath);
+
+                                uint tracks = (RSD.Channels / 2);
+                                if (tracks > 1 && tracks < 32)
+                                {
+                                    for (int t = 1; t < tracks; t++)
+                                    {
+                                        string name2 = outPath.Replace(".res", $"_{t}.res");
+                                        CircusSetup.GodotBinaryAudioStreamWAV wav2 = new CircusSetup.GodotBinaryAudioStreamWAV(RSD, false, t);
+                                        wav2.WriteToFile(name2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    //Console.WriteLine("RCF Extract: " + Folders[Folders.Length - 1] + " " + (i + 1).ToString() + @"\" + Header.Files.ToString());
+                    FileStream File = new FileStream(check, FileMode.Create, FileAccess.Write);
+                    BinaryWriter FileWriter = new BinaryWriter(File);
+                    FileWriter.Write(bytes);
+                    FileWriter.Close();
+                    File.Close();
+                }
             }
             RCFReader.Close();
             RCF.Close();

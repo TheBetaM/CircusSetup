@@ -30,5 +30,24 @@ namespace CircusSetup
             res.Add("backface_collision", true);
             Resources.Add(res);
         }
+
+        public GodotBinaryCollisionShape(WorldDef world)
+        {
+            var res = new Resource(ResType, $"local://{ResType}_aaaaa");
+            var poslist = world.CollisionPoints;
+            var posArray = new List<Vector3>();
+            int maxPoint = poslist.Count;
+            while (maxPoint % 3 != 0)
+            {
+                maxPoint--;
+            }
+            for (int i = 0; i < maxPoint; i++)
+            {
+                posArray.Add(poslist[i]);
+            }
+            res.Add("data", posArray.ToArray());
+            res.Add("backface_collision", true);
+            Resources.Add(res);
+        }
     }
 }

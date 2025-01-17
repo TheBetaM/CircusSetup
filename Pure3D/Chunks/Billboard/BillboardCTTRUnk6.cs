@@ -9,6 +9,7 @@ namespace Pure3D.Chunks
     [ChunkType(0x1700D)]
     public class BillboardCTTRUnk6 : Unknown
     {
+        // uint, uint, uint, uint, uint
         public BillboardCTTRUnk6(File file, uint type) : base(file, type)
         {
 

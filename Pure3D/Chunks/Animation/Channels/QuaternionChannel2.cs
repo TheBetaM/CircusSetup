@@ -86,6 +86,37 @@ namespace Pure3D.Chunks
             {
                 Lines.AppendLine($"Frame{i}: {Frames[i]}");
             }
+            for (int i = 0; i < Values.GetLength(0); i++)
+            {
+                //float angX = 180f * (Values[i, 0] / 32767f);
+                //float angY = 180f * (Values[i, 1] / 32767f);
+                //float angZ = 180f * (Values[i, 2] / 32767f);
+                Lines.AppendLine($"Values{i}: {Values[i,0]} {Values[i,1]} {Values[i,2]}");
+                float angX = (float)Values[i, 0] / short.MaxValue;
+                float angY = (float)Values[i, 1] / short.MaxValue;
+                float angZ = (float)Values[i, 2] / short.MaxValue;
+                float angW = (float)Math.Sqrt(1 - (angX * angX + angY * angY + angZ * angZ));
+                Lines.AppendLine($"Quat{i}: {angX} {angY} {angZ} {angW}");
+            }
+            /*
+            for (int i = 0; i < Values.GetLength(0); i++)
+            {
+                //float angX = 180f * (Values[i, 0] / 32767f);
+                //float angY = 180f * (Values[i, 1] / 32767f);
+                //float angZ = 180f * (Values[i, 2] / 32767f);
+                float angX = (float)Math.PI * 0.5f * (Values[i, 0] / 32767f);
+                float angY = (float)Math.PI * 0.5f  * (Values[i, 1] / 32767f);
+                float angZ = (float)Math.PI * 0.5f  * (Values[i, 2] / 32767f);
+                Lines.AppendLine($"Values{i}: {Values[i,0]} {Values[i,1]} {Values[i,2]}");// | {angX} {angY} {angZ}");
+                Quaternion quat1 = new Quaternion(angX, angY, angZ, 1f);
+                float ang2X = (float)Math.PI * 1f * (Values[i, 0] / 32767f);
+                float ang2Y = (float)Math.PI * 1f * (Values[i, 1] / 32767f);
+                float ang2Z = (float)Math.PI * 1f * (Values[i, 2] / 32767f);
+                Quaternion quat2 = Quaternion.CreateFromYawPitchRoll(ang2Y, ang2X, ang2Z);
+                Lines.AppendLine($"Quat1{i}: {quat1.X} {quat1.Y} {quat1.Z} {quat1.W}");
+                Lines.AppendLine($"Quat2{i}: {quat2.X} {quat2.Y} {quat2.Z} {quat2.W}");
+            }
+            */
 
             return Lines.ToString();
         }

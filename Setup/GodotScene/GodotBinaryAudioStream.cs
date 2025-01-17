@@ -40,6 +40,9 @@ namespace CircusSetup
                     break;
                 case "WADP": // WII NGC DSP
                     break;
+                case "PCM ": // WAV PCM
+                    SoundData = sfx.Data;
+                    break;
                 default:
                     break;
             }

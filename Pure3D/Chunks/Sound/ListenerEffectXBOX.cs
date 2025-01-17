@@ -5,13 +5,14 @@ using System.Text;
 
 namespace Pure3D.Chunks
 {
-    [ChunkType(0x1000105)]
-    public class Reverb6 : Chunk
+    [ChunkType(0x1000100)]
+    public class ListenerEffectXBOX : Chunk
     {
         public string Name;
         public List<float> Params = new List<float>();
+        public List<uint> Params2 = new List<uint>();
 
-        public Reverb6(File file, uint type) : base(file, type)
+        public ListenerEffectXBOX(File file, uint type) : base(file, type)
         {
         }
 
@@ -20,9 +21,13 @@ namespace Pure3D.Chunks
             int NameLength = reader.ReadInt32();
             Name = new string(reader.ReadChars(NameLength));
             reader.ReadByte();
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < 5; i++)
             {
                 Params.Add(reader.ReadSingle());
+            }
+            for (int i = 0; i < 7; i++)
+            {
+                Params2.Add(reader.ReadUInt32());
             }
         }
 
@@ -35,11 +40,15 @@ namespace Pure3D.Chunks
             {
                 writer.Write(Params[i]);
             }
+            for (int i = 0; i < Params2.Count; i++)
+            {
+                writer.Write(Params2[i]);
+            }
         }
 
         public override string ToString()
         {
-            return $"Reverb6 {Name}";
+            return $"ListenerEffectXBOX {Name}";
         }
     }
 }
