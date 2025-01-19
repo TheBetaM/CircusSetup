@@ -483,21 +483,6 @@ namespace CircusSetup
                                 UnkTypes.Add(nat.PSP_MeshType);
                                 UnkTypesFiles.Add(file);
                             }
-                            else if (nat != null && !UnkTypes.Contains(nat.PS2_MeshType)) //hope this doesn't fuck up, currently temp for PS2 -ShadowLuigi37
-                            {
-                                UnkTypes.Add(nat.PS2_MeshType);
-                                UnkTypesFiles.Add(file);
-                            }
-                            else if (nat != null && !UnkTypes.Contains(nat.PS2Demo_MeshType)) //Header is different on the PS2 Demo now? It's different on the PS2 Demo now! -ShadowLuigi37
-                            {
-                                UnkTypes.Add(nat.PS2Demo_MeshType);
-                                UnkTypesFiles.Add(file);
-                            }
-                            else if (nat != null && !UnkTypes.Contains(nat.PS2Shar_MeshType)) //Stop milking the yellow family house of mouse! -ShadowLuigi37
-                            {
-                                UnkTypes.Add(nat.PS2Shar_MeshType);
-                                UnkTypesFiles.Add(file);
-                            }
                         }
                     }
                     
