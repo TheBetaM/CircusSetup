@@ -4,6 +4,7 @@ using System.Text;
 using System.Linq;
 using System;
 using CircusSetup.VIF;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Pure3D.Chunks
 {
@@ -16,6 +17,9 @@ namespace Pure3D.Chunks
         public int UnkParam;
         public int VifSize;
         public uint PSP_MeshType;
+        public uint PS2_MeshType; //All PS2 Stuff is tempory, just reuses PSP stuff, Don't expect Tracks to work yet, or even mesh shapes to actually be visible. - ShadowLuigi37)
+        public uint PS2Demo_MeshType;
+        public uint PS2Shar_MeshType;
 
         public NativeVertexList(File file, uint type) : base(file, type)
         {
@@ -39,6 +43,18 @@ namespace Pure3D.Chunks
             {
                 Lines.AppendLine($"PSP Native Mesh Type: 0x{PSP_MeshType:X8}");
             }
+            if (Version == 0x00100009) // PS2 CTTR Only
+            {
+                Lines.AppendLine($"PS2 Native Mesh Type: 0x{PS2_MeshType:X8}");
+            }
+            if (Version == 0x00100008) // PS2 CTTR Demo Only
+            {
+                Lines.AppendLine($"PS2 Demo Native Mesh Type: 0x{PS2Demo_MeshType:X8}");
+            }
+            if (Version == 0x00100002) // PS2 SHAR Only
+            {
+                Lines.AppendLine($"PS2 SHAR Native Mesh Type: 0x{PS2Shar_MeshType:X8}");
+            }
             Lines.AppendLine($"Length: {Data.Length}");
             Lines.AppendLine(Data.ToLine());
 
@@ -52,7 +68,9 @@ namespace Pure3D.Chunks
             /*
             0x00020001 XBOX (SHAR only)
             0x00040001 PSP
-            0x00100009 PS2 (SHAR: 0x00100002)
+            0x00100002 PS2 (SHAR) //Donut Team's Special Interest -ShadowLuigi37, a guy with Special Interests... Hypocrite (Update 9pm PST on a Saturday, why does SHAR on PS2 have P3Ds compressed with p3dcompress? Why can't this open compressed P3Ds?
+            0x00100008 PS2 (CTTR Demo)
+            0x00100009 PS2
             0x00030004 GCN/WII
             */
             Version = reader.ReadInt32();
@@ -126,12 +144,137 @@ namespace Pure3D.Chunks
                     }
                 }
             }
-            else
+            else if (Version == 0x00100009) // PS2, CTTR Only //TEMP FROM PSP, THEY SHOULD JUST PLAY WITH THEIR NUTS -ShadowLuigi37
             {
-                // PS2
-                reader.ReadBytes(8);
-                Data = reader.ReadBytes((int)length - 0x14);
-                Vertexes = CalculateData(Data);
+                /*
+                Data = new byte[0];
+                //var prim = (PrimitiveGroupCTTR)Parent;
+                //var item = (Named)prim.Parent;
+                //Console.WriteLine($" MODEL {item.Name} {prim.ShaderName}");
+                ReadPS2(reader);
+                */
+
+                Data = reader.ReadBytes((int)length - 12);
+                using (var stream = new MemoryStream(Data))
+                {
+                    using (var preader = new BinaryReader(stream))
+                    {
+                        bool err = true;
+                        try
+                        {
+                            ReadPS2(preader);
+                            err = false;
+                        }
+                        catch
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED PS2 MODEL LONG! {PS2_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PS2_MeshType);
+                        }
+                        if (stream.Position != stream.Length)
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED PS2 MODEL SHORT! {PS2_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PS2_MeshType);
+                        }
+                        if (TypeErrors.Contains(PS2_MeshType) && !err)
+                        {
+                            //var prim = (PrimitiveGroup)Parent;
+                            //var item = (Named)prim.Parent;
+                            //Console.WriteLine($"PS2 MODEL DIDNT ERROR! {PS2_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                        }
+                    }
+                }
+            }
+            else if (Version == 0x00100008) // PS2, CTTR Demo Only //TEMP FROM PSP, THEY SHOULD JUST PLAY WITH THEIR NUTS -ShadowLuigi37
+            {
+                /*
+                Data = new byte[0];
+                //var prim = (PrimitiveGroupCTTR)Parent;
+                //var item = (Named)prim.Parent;
+                //Console.WriteLine($" MODEL {item.Name} {prim.ShaderName}");
+                ReadPS2Demo(reader);
+                */
+
+                Data = reader.ReadBytes((int)length - 12);
+                using (var stream = new MemoryStream(Data))
+                {
+                    using (var preader = new BinaryReader(stream))
+                    {
+                        bool err = true;
+                        try
+                        {
+                            ReadPS2Demo(preader);
+                            err = false;
+                        }
+                        catch
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED PS2 Demo MODEL LONG! {PS2Demo_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PS2Demo_MeshType);
+                        }
+                        if (stream.Position != stream.Length)
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED PS2 Demo MODEL SHORT! {PS2Demo_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PS2Demo_MeshType);
+                        }
+                        if (TypeErrors.Contains(PS2Demo_MeshType) && !err)
+                        {
+                            //var prim = (PrimitiveGroup)Parent;
+                            //var item = (Named)prim.Parent;
+                            //Console.WriteLine($"PS2 Demo MODEL DIDNT ERROR! {PS2Demo_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                        }
+                    }
+                }
+            }
+            else if (Version == 0x00100002) // PS2, SHAR Only (Can't open compressed P3Ds //TEMP FROM PSP, Handheld crap -ShadowLuigi37
+            {
+                /*
+                Data = new byte[0];
+                //var prim = (PrimitiveGroup)Parent;
+                //var item = (Named)prim.Parent;
+                //Console.WriteLine($" MODEL {item.Name} {prim.ShaderName}");
+                ReadPS2SHAR(reader);
+                */
+
+                Data = reader.ReadBytes((int)length - 12);
+                using (var stream = new MemoryStream(Data))
+                {
+                    using (var preader = new BinaryReader(stream))
+                    {
+                        bool err = true;
+                        try
+                        {
+                            ReadPS2SHAR(preader);
+                            err = false;
+                        }
+                        catch
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED PS2 SHAR MODEL LONG! {PS2Shar_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PS2Shar_MeshType);
+                        }
+                        if (stream.Position != stream.Length)
+                        {
+                            var prim = (PrimitiveGroup)Parent;
+                            var item = (Named)prim.Parent;
+                            Console.WriteLine($"FAILED PS2 SHAR MODEL SHORT! {PS2Shar_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                            TypeErrors.Add(PS2Shar_MeshType);
+                        }
+                        if (TypeErrors.Contains(PS2Shar_MeshType) && !err)
+                        {
+                            //var prim = (PrimitiveGroup)Parent;
+                            //var item = (Named)prim.Parent;
+                            //Console.WriteLine($"PS2 SHAR MODEL DIDNT ERROR! {PS2Shar_MeshType:X5} {item.Name} {prim.ShaderName} {File.FullName}");
+                        }
+                    }
+                }
             }
         }
 
@@ -362,6 +505,586 @@ namespace Pure3D.Chunks
                 {
                     Vertexes[i].U = reader.ReadSingle();
                     Vertexes[i].V = reader.ReadSingle();
+                }
+            }
+        }
+
+        void ReadPS2(BinaryReader reader) // TEMP, COPIED FROM PSP FOR NOW, JUST PLAY WITH YOUR FUCKING NUTS, AND I MEAN YOUR NUTSHACK -ShadowLuigi37
+        {
+            var prim = (PrimitiveGroup)Parent;
+            var matpal = prim.GetChild<MatrixPalette>();
+            uint UnkVal1 = reader.ReadUInt32(); // version? (3 or 4)
+            uint Bitfield = reader.ReadUInt32();
+
+            bool HasOneByteUV = (Bitfield & (1 << 0)) != 0; // used only in Titans/MoM
+            //bool HasTwoByteUV = (Bitfield & (1 << 1)) != 0; // disabled only in Titans/MoM, when previous one is enabled
+            bool HasUnk2 = (Bitfield & (1 << 2)) != 0; // ?
+            //bool HasUnk3 = (Bitfield & (1 << 3)) != 0; // always the same as previous one
+
+            bool HasColors = (Bitfield & (1 << 4)) != 0;
+            bool HasNormals = (Bitfield & (1 << 5)) != 0;
+            //bool Unused1 = (Bitfield & (1 << 6)) != 0;
+            bool UncompressedPositions = (Bitfield & (1 << 7)) != 0;
+
+            //bool AlwaysTrue = (Bitfield & (1 << 8)) != 0; // always true - pos?
+            bool HasFourBoneIndices = (Bitfield & (1 << 9)) != 0;
+            //bool Unused2 = (Bitfield & (1 << 10)) != 0;
+            bool HasByteIndices = (Bitfield & (1 << 11)) != 0;
+
+            bool HasShortIndices = (Bitfield & (1 << 12)) != 0;
+            //bool Unused3 = (Bitfield & (1 << 13)) != 0;
+            bool HasUnk4 = (Bitfield & (1 << 14)) != 0; // ?
+            bool HasUnk5 = (Bitfield & (1 << 15)) != 0; // ?
+
+            bool HasEightBoneIndices = (Bitfield & (1 << 16)) != 0;
+
+            PS2_MeshType = Bitfield;
+
+            uint VCount = reader.ReadUInt32();
+            uint IndicesCount = 0;
+            uint MatricesCount = prim.NumMatrices;
+            /*
+            if (MatricesCount % 2 != 0)
+            {
+                MatricesCount++;
+            }
+            */
+            float UV_ScaleX = 1f;
+            float UV_ScaleY = 1f;
+            float UV_OffsetX = 0f;
+            float UV_OffsetY = 0f;
+            float ModelScaleX = 1f;
+            float ModelScaleY = 1f;
+            float ModelScaleZ = 1f;
+            float ModelOffsetX = 0f;
+            float ModelOffsetY = 0f;
+            float ModelOffsetZ = 0f;
+            if (VCount != prim.NumVertices)
+            {
+                VCount = reader.ReadUInt32();
+                IndicesCount = reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                MatricesCount = reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                reader.ReadSingle();
+            }
+            else
+            {
+                IndicesCount = reader.ReadUInt32();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
+            }
+            reader.ReadBytes(0x60); // 24 floats (bounding box 8x Vector3)
+            reader.ReadUInt32(); // vertex data offset
+            reader.ReadUInt32(); // index data offset
+
+            uint ExtraPadding = 4 - MatricesCount;
+            if (HasEightBoneIndices)
+            {
+                ExtraPadding = 8 - MatricesCount;
+            }
+            //if (MatricesCount != 4 && MatricesCount != 8)
+            //{
+            //    ExtraPadding--;
+            //}
+            
+            for (int i = 0; i < VCount; i++)
+            {
+                var vert = new VertexData();
+                if (HasEightBoneIndices || HasFourBoneIndices)
+                {
+                    int wpos = 0;
+                    for (int a = 0; a < MatricesCount; a++)
+                    {
+                        byte Wgt = reader.ReadByte();
+                        if (Wgt != 0 && wpos < 4)
+                        {
+                            vert.JointIndexes[wpos] = a;
+                            vert.Weights[wpos] = Wgt / 128f;
+                            wpos++;
+                        }
+                    }
+                    //if (MatricesCount != 4 && MatricesCount != 8)
+                    //{
+                    //    reader.ReadByte();
+                    //}
+                }
+                if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
+                {
+                    if (HasOneByteUV)
+                    {
+                        vert.U = ((reader.ReadByte() / 128f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadByte() / 128f) * UV_ScaleY) + UV_OffsetY;
+                        reader.ReadByte();
+                        reader.ReadByte();
+                    }
+                    else
+                    {
+                        vert.U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
+                    }
+                }
+                if (HasColors)
+                {
+                    vert.R = reader.ReadByte();
+                    vert.G = reader.ReadByte();
+                    vert.B = reader.ReadByte();
+                    vert.A = reader.ReadByte();
+                }
+                if (HasNormals)
+                {
+                    vert.BNX = reader.ReadByte();
+                    vert.BNY = reader.ReadByte();
+                    vert.BNZ = reader.ReadByte();
+                    reader.ReadByte();
+                }
+                if (HasEightBoneIndices || HasFourBoneIndices)
+                {
+                    for (int a = 0; a < ExtraPadding; a++)
+                    {
+                        reader.ReadByte();
+                    }
+                }
+                if (!UncompressedPositions)
+                {
+                    short X = reader.ReadInt16();
+                    short Y = reader.ReadInt16();
+                    short Z = reader.ReadInt16();
+                    short W = reader.ReadInt16();
+                    vert.X = (X / 32768f) * ModelScaleX + ModelOffsetX;
+                    vert.Y = (Y / 32768f) * ModelScaleY + ModelOffsetY;
+                    vert.Z = (Z / 32768f) * ModelScaleZ + ModelOffsetZ;
+                }
+                else
+                {
+                    // also add the model scale and offset?
+                    vert.X = reader.ReadSingle();
+                    vert.Y = reader.ReadSingle();
+                    vert.Z = reader.ReadSingle();
+                }
+                Vertexes.Add(vert);
+            }
+            if (HasByteIndices)
+            {
+                for (int i = 0; i < IndicesCount; i++)
+                {
+                    Indices.Add(reader.ReadByte());
+                }
+            }
+            else
+            {
+                for (int i = 0; i < IndicesCount; i++)
+                {
+                    Indices.Add(reader.ReadUInt16());
+                }
+            }
+            
+        }
+
+        void ReadPS2Demo(BinaryReader reader) // TEMP, COPIED FROM PSP FOR NOW (FOR PS2 DEMO), JUST PLAY WITH YOUR FUCKING NUTS, AND I MEAN YOUR NUTSHACK -ShadowLuigi37
+        {
+            var prim = (PrimitiveGroup)Parent;
+            var matpal = prim.GetChild<MatrixPalette>();
+            uint UnkVal1 = reader.ReadUInt32(); // version? (3 or 4)
+            uint Bitfield = reader.ReadUInt32();
+
+            bool HasOneByteUV = (Bitfield & (1 << 0)) != 0; // used only in Titans/MoM
+            //bool HasTwoByteUV = (Bitfield & (1 << 1)) != 0; // disabled only in Titans/MoM, when previous one is enabled
+            bool HasUnk2 = (Bitfield & (1 << 2)) != 0; // ?
+            //bool HasUnk3 = (Bitfield & (1 << 3)) != 0; // always the same as previous one
+
+            bool HasColors = (Bitfield & (1 << 4)) != 0;
+            bool HasNormals = (Bitfield & (1 << 5)) != 0;
+            //bool Unused1 = (Bitfield & (1 << 6)) != 0;
+            bool UncompressedPositions = (Bitfield & (1 << 7)) != 0;
+
+            //bool AlwaysTrue = (Bitfield & (1 << 8)) != 0; // always true - pos?
+            bool HasFourBoneIndices = (Bitfield & (1 << 9)) != 0;
+            //bool Unused2 = (Bitfield & (1 << 10)) != 0;
+            bool HasByteIndices = (Bitfield & (1 << 11)) != 0;
+
+            bool HasShortIndices = (Bitfield & (1 << 12)) != 0;
+            //bool Unused3 = (Bitfield & (1 << 13)) != 0;
+            bool HasUnk4 = (Bitfield & (1 << 14)) != 0; // ?
+            bool HasUnk5 = (Bitfield & (1 << 15)) != 0; // ?
+
+            bool HasEightBoneIndices = (Bitfield & (1 << 16)) != 0;
+
+            PS2Demo_MeshType = Bitfield;
+
+            uint VCount = reader.ReadUInt32();
+            uint IndicesCount = 0;
+            uint MatricesCount = prim.NumMatrices;
+            /*
+            if (MatricesCount % 2 != 0)
+            {
+                MatricesCount++;
+            }
+            */
+            float UV_ScaleX = 1f;
+            float UV_ScaleY = 1f;
+            float UV_OffsetX = 0f;
+            float UV_OffsetY = 0f;
+            float ModelScaleX = 1f;
+            float ModelScaleY = 1f;
+            float ModelScaleZ = 1f;
+            float ModelOffsetX = 0f;
+            float ModelOffsetY = 0f;
+            float ModelOffsetZ = 0f;
+            if (VCount != prim.NumVertices)
+            {
+                VCount = reader.ReadUInt32();
+                IndicesCount = reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                MatricesCount = reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                reader.ReadSingle();
+            }
+            else
+            {
+                IndicesCount = reader.ReadUInt32();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
+            }
+            reader.ReadBytes(0x60); // 24 floats (bounding box 8x Vector3)
+            reader.ReadUInt32(); // vertex data offset
+            reader.ReadUInt32(); // index data offset
+
+            uint ExtraPadding = 4 - MatricesCount;
+            if (HasEightBoneIndices)
+            {
+                ExtraPadding = 8 - MatricesCount;
+            }
+            //if (MatricesCount != 4 && MatricesCount != 8)
+            //{
+            //    ExtraPadding--;
+            //}
+
+            for (int i = 0; i < VCount; i++)
+            {
+                var vert = new VertexData();
+                if (HasEightBoneIndices || HasFourBoneIndices)
+                {
+                    int wpos = 0;
+                    for (int a = 0; a < MatricesCount; a++)
+                    {
+                        byte Wgt = reader.ReadByte();
+                        if (Wgt != 0 && wpos < 4)
+                        {
+                            vert.JointIndexes[wpos] = a;
+                            vert.Weights[wpos] = Wgt / 128f;
+                            wpos++;
+                        }
+                    }
+                    //if (MatricesCount != 4 && MatricesCount != 8)
+                    //{
+                    //    reader.ReadByte();
+                    //}
+                }
+                if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
+                {
+                    if (HasOneByteUV)
+                    {
+                        vert.U = ((reader.ReadByte() / 128f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadByte() / 128f) * UV_ScaleY) + UV_OffsetY;
+                        reader.ReadByte();
+                        reader.ReadByte();
+                    }
+                    else
+                    {
+                        vert.U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
+                    }
+                }
+                if (HasColors)
+                {
+                    vert.R = reader.ReadByte();
+                    vert.G = reader.ReadByte();
+                    vert.B = reader.ReadByte();
+                    vert.A = reader.ReadByte();
+                }
+                if (HasNormals)
+                {
+                    vert.BNX = reader.ReadByte();
+                    vert.BNY = reader.ReadByte();
+                    vert.BNZ = reader.ReadByte();
+                    reader.ReadByte();
+                }
+                if (HasEightBoneIndices || HasFourBoneIndices)
+                {
+                    for (int a = 0; a < ExtraPadding; a++)
+                    {
+                        reader.ReadByte();
+                    }
+                }
+                if (!UncompressedPositions)
+                {
+                    short X = reader.ReadInt16();
+                    short Y = reader.ReadInt16();
+                    short Z = reader.ReadInt16();
+                    short W = reader.ReadInt16();
+                    vert.X = (X / 32768f) * ModelScaleX + ModelOffsetX;
+                    vert.Y = (Y / 32768f) * ModelScaleY + ModelOffsetY;
+                    vert.Z = (Z / 32768f) * ModelScaleZ + ModelOffsetZ;
+                }
+                else
+                {
+                    // also add the model scale and offset?
+                    vert.X = reader.ReadSingle();
+                    vert.Y = reader.ReadSingle();
+                    vert.Z = reader.ReadSingle();
+                }
+                Vertexes.Add(vert);
+            }
+            if (HasByteIndices)
+            {
+                for (int i = 0; i < IndicesCount; i++)
+                {
+                    Indices.Add(reader.ReadByte());
+                }
+            }
+            else
+            {
+                for (int i = 0; i < IndicesCount; i++)
+                {
+                    Indices.Add(reader.ReadUInt16());
+                }
+            }
+        }
+
+        void ReadPS2SHAR(BinaryReader reader) // TEMP, COPIED FROM PSP FOR NOW (FOR SHAR ON PS2, Mostly useless because of compressed P3Ds), This will most likely be reworked like the rest of PS2 since mesh shapes still haven't been figured out. -ShadowLuigi37
+        {
+            var prim = (PrimitiveGroup)Parent;
+            var matpal = prim.GetChild<MatrixPalette>();
+            uint UnkVal1 = reader.ReadUInt32(); // version? (3 or 4)
+            uint Bitfield = reader.ReadUInt32();
+
+            bool HasOneByteUV = (Bitfield & (1 << 0)) != 0; // used only in Titans/MoM
+            //bool HasTwoByteUV = (Bitfield & (1 << 1)) != 0; // disabled only in Titans/MoM, when previous one is enabled
+            bool HasUnk2 = (Bitfield & (1 << 2)) != 0; // ?
+            //bool HasUnk3 = (Bitfield & (1 << 3)) != 0; // always the same as previous one
+
+            bool HasColors = (Bitfield & (1 << 4)) != 0;
+            bool HasNormals = (Bitfield & (1 << 5)) != 0;
+            //bool Unused1 = (Bitfield & (1 << 6)) != 0;
+            bool UncompressedPositions = (Bitfield & (1 << 7)) != 0;
+
+            //bool AlwaysTrue = (Bitfield & (1 << 8)) != 0; // always true - pos?
+            bool HasFourBoneIndices = (Bitfield & (1 << 9)) != 0;
+            //bool Unused2 = (Bitfield & (1 << 10)) != 0;
+            bool HasByteIndices = (Bitfield & (1 << 11)) != 0;
+
+            bool HasShortIndices = (Bitfield & (1 << 12)) != 0;
+            //bool Unused3 = (Bitfield & (1 << 13)) != 0;
+            bool HasUnk4 = (Bitfield & (1 << 14)) != 0; // ?
+            bool HasUnk5 = (Bitfield & (1 << 15)) != 0; // ?
+
+            bool HasEightBoneIndices = (Bitfield & (1 << 16)) != 0;
+
+            PS2Shar_MeshType = Bitfield;
+
+            uint VCount = reader.ReadUInt32();
+            uint IndicesCount = 0;
+            uint MatricesCount = prim.NumMatrices;
+            /*
+            if (MatricesCount % 2 != 0)
+            {
+                MatricesCount++;
+            }
+            */
+            float UV_ScaleX = 1f;
+            float UV_ScaleY = 1f;
+            float UV_OffsetX = 0f;
+            float UV_OffsetY = 0f;
+            float ModelScaleX = 1f;
+            float ModelScaleY = 1f;
+            float ModelScaleZ = 1f;
+            float ModelOffsetX = 0f;
+            float ModelOffsetY = 0f;
+            float ModelOffsetZ = 0f;
+            if (VCount != prim.NumVertices)
+            {
+                VCount = reader.ReadUInt32();
+                IndicesCount = reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                MatricesCount = reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                reader.ReadUInt32();
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                reader.ReadSingle();
+            }
+            else
+            {
+                IndicesCount = reader.ReadUInt32();
+                ModelScaleX = reader.ReadSingle();
+                ModelScaleY = reader.ReadSingle();
+                ModelScaleZ = reader.ReadSingle();
+                ModelOffsetX = reader.ReadSingle();
+                ModelOffsetY = reader.ReadSingle();
+                ModelOffsetZ = reader.ReadSingle();
+                UV_ScaleX = reader.ReadSingle();
+                UV_ScaleY = reader.ReadSingle();
+                UV_OffsetX = reader.ReadSingle();
+                UV_OffsetY = reader.ReadSingle();
+            }
+            reader.ReadBytes(0x60); // 24 floats (bounding box 8x Vector3)
+            reader.ReadUInt32(); // vertex data offset
+            reader.ReadUInt32(); // index data offset
+
+            uint ExtraPadding = 4 - MatricesCount;
+            if (HasEightBoneIndices)
+            {
+                ExtraPadding = 8 - MatricesCount;
+            }
+            //if (MatricesCount != 4 && MatricesCount != 8)
+            //{
+            //    ExtraPadding--;
+            //}
+
+            for (int i = 0; i < VCount; i++)
+            {
+                var vert = new VertexData();
+                if (HasEightBoneIndices || HasFourBoneIndices)
+                {
+                    int wpos = 0;
+                    for (int a = 0; a < MatricesCount; a++)
+                    {
+                        byte Wgt = reader.ReadByte();
+                        if (Wgt != 0 && wpos < 4)
+                        {
+                            vert.JointIndexes[wpos] = a;
+                            vert.Weights[wpos] = Wgt / 128f;
+                            wpos++;
+                        }
+                    }
+                    //if (MatricesCount != 4 && MatricesCount != 8)
+                    //{
+                    //    reader.ReadByte();
+                    //}
+                }
+                if (prim.UVCount != PrimitiveGroup.VertexUVCount.UVx0)
+                {
+                    if (HasOneByteUV)
+                    {
+                        vert.U = ((reader.ReadByte() / 128f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadByte() / 128f) * UV_ScaleY) + UV_OffsetY;
+                        reader.ReadByte();
+                        reader.ReadByte();
+                    }
+                    else
+                    {
+                        vert.U = ((reader.ReadUInt16() / 32768f) * UV_ScaleX) + UV_OffsetX;
+                        vert.V = ((reader.ReadUInt16() / 32768f) * UV_ScaleY) + UV_OffsetY;
+                    }
+                }
+                if (HasColors)
+                {
+                    vert.R = reader.ReadByte();
+                    vert.G = reader.ReadByte();
+                    vert.B = reader.ReadByte();
+                    vert.A = reader.ReadByte();
+                }
+                if (HasNormals)
+                {
+                    vert.BNX = reader.ReadByte();
+                    vert.BNY = reader.ReadByte();
+                    vert.BNZ = reader.ReadByte();
+                    reader.ReadByte();
+                }
+                if (HasEightBoneIndices || HasFourBoneIndices)
+                {
+                    for (int a = 0; a < ExtraPadding; a++)
+                    {
+                        reader.ReadByte();
+                    }
+                }
+                if (!UncompressedPositions)
+                {
+                    short X = reader.ReadInt16();
+                    short Y = reader.ReadInt16();
+                    short Z = reader.ReadInt16();
+                    short W = reader.ReadInt16();
+                    vert.X = (X / 32768f) * ModelScaleX + ModelOffsetX;
+                    vert.Y = (Y / 32768f) * ModelScaleY + ModelOffsetY;
+                    vert.Z = (Z / 32768f) * ModelScaleZ + ModelOffsetZ;
+                }
+                else
+                {
+                    // also add the model scale and offset?
+                    vert.X = reader.ReadSingle();
+                    vert.Y = reader.ReadSingle();
+                    vert.Z = reader.ReadSingle();
+                }
+                Vertexes.Add(vert);
+            }
+            if (HasByteIndices)
+            {
+                for (int i = 0; i < IndicesCount; i++)
+                {
+                    Indices.Add(reader.ReadByte());
+                }
+            }
+            else
+            {
+                for (int i = 0; i < IndicesCount; i++)
+                {
+                    Indices.Add(reader.ReadUInt16());
                 }
             }
         }
