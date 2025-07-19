@@ -3,10 +3,8 @@ using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
-// RCF API by NeoKesha and BetaM
-// Converted from VisualBasic
 
-namespace RadcoreCementFile
+namespace RCF_Archive
 {
     public class BinaryReader2 : BinaryReader
     {
@@ -86,190 +84,131 @@ namespace RadcoreCementFile
 
     public class RCF
     {
-        public struct RCF_HEADER
+        public class FileEntry
         {
-            public string signature;
-            public byte Flag1;
-            public byte Flag2;
-            public bool Flag3;
-            public bool Flag4;
-            public UInt32 T1Offset;
-            public UInt32 T1Size;
-            public UInt32 T2Offset;
-            public UInt32 T2Size;
-            public UInt32 Gap1;
-            public UInt32 Files;
-            public RCF_TABLE1[] T1File;
-            public UInt32 NamesAligment;
-            public UInt32 Gap2;
-            public RCF_TABLE2[] T2File;
-        }
-        public struct RCF_TABLE1
-        {
-            public UInt32 ID;
-            public UInt32 Offset;
-            public UInt32 Size;
-            public UInt32 CompressedSize;
-            public UInt32 Pos;
-            public UInt32 CompressionFlag; // 0 - No Compression, 1 - Compressed
-        }
-        public struct RCF_TABLE2
-        {
-            public UInt32 SomeShit1;
-            public UInt32 Align;
-            public UInt32 Gap1;
-            public UInt32 NameLen;
+            public uint CRC;
+            public uint Offset;
+            public int Size;
+            public int CompressedSize;
+            public uint CompressionFlag; // 0 - No Compression, 1 - Compressed
+            public DateTime LastModifiedTime;
             public string Name;
-            public UInt32 Gap2;
-            public UInt32 Ref;
 
-            public string External;
+            public override string ToString()
+            {
+                return $"CRC: 0x{CRC:X8}\nOffset: 0x{Offset:X8}\nSize: 0x{Size:X8}\nLast Modified: {LastModifiedTime}\nCompression: {CompressionFlag}";
+            }
         }
 
-        private string RCF_Path;
-        public RCF_HEADER Header;
+        public List<FileEntry> Files = new List<FileEntry>();
+        public string FullName;
 
-        public void OpenRCF(string Path)
+        public override string ToString()
         {
-            if (!File.Exists(Path))
-                return;
-            RCF_Path = Path;
-            FileStream RCF = new FileStream(RCF_Path, FileMode.Open, FileAccess.Read);
-            BinaryReader RCFReader = new BinaryReader(RCF);
-            BinaryReader2 RCFReader2 = new BinaryReader2(RCF);
-            Header.signature = "";
-            for (Int32 i = 1; i <= 32; i++)
-            {
-                byte ch = RCFReader.ReadByte();
-                if (ch != 0x00)
-                    Header.signature += (char)ch;
-                else
-                    break;
-            }
-            RCF.Position = 32;
-            Header.Flag1 = RCFReader.ReadByte();
-            Header.Flag2 = RCFReader.ReadByte();
-            Header.Flag3 = RCFReader.ReadBoolean();
-            Header.Flag4 = RCFReader.ReadBoolean();
+            return $"File Count: {Files.Count}";
+        }
 
-            if (!Header.Flag3)
+        public void Load(string path)
+        {
+            FullName = path;
+
+            if (!File.Exists(path))
+                return;
+
+            /*
+            using (var br = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x10000, FileOptions.SequentialScan))
             {
-                Header.T1Offset = RCFReader.ReadUInt32();
-                Header.T1Size = RCFReader.ReadUInt32();
-                Header.T2Offset = RCFReader.ReadUInt32();
-                Header.T2Size = RCFReader.ReadUInt32();
-                Header.Gap1 = RCFReader.ReadUInt32();
-                Header.Files = RCFReader.ReadUInt32();
-                Array.Resize(ref Header.T1File, (int)Header.Files);
-                Array.Resize(ref Header.T2File, (int)Header.Files);
-                RCF.Position = Header.T1Offset;
-                for (Int32 i = 0; i <= Header.Files - 1; i++)
+                byte[] buffer = new byte[br.Length];
+                br.Read(buffer, 0, buffer.Length);
+                using (var memoryStream = new MemoryStream(buffer))
                 {
-                    Header.T1File[i].ID = RCFReader.ReadUInt32();
-                    Header.T1File[i].Offset = RCFReader.ReadUInt32();
-                    Header.T1File[i].Size = RCFReader.ReadUInt32();
-                    Header.T1File[i].CompressedSize = Header.T1File[i].Size;
-                    Header.T1File[i].CompressionFlag = 0;
+                    using (BinaryReader reader = new BinaryReader(memoryStream))
+                    {
+                        Load(reader, reader.BaseStream.Length);
+                    }
                 }
             }
-            else
+            */
+
+            using (var br = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x10000, FileOptions.SequentialScan))
             {
-                Header.T1Offset = RCFReader2.ReadUInt32();
-                Header.T1Size = RCFReader2.ReadUInt32();
-                Header.T2Offset = RCFReader2.ReadUInt32();
-                Header.T2Size = RCFReader2.ReadUInt32();
-                Header.Gap1 = RCFReader2.ReadUInt32();
-                Header.Files = RCFReader2.ReadUInt32();
-                Array.Resize(ref Header.T1File, (int)Header.Files);
-                Array.Resize(ref Header.T2File, (int)Header.Files);
-                RCF.Position = Header.T1Offset;
-                if (Header.Flag2 >= 1)
+                using (BinaryReader reader = new BinaryReader(br))
                 {
-                    for (Int32 i = 0; i <= Header.Files - 1; i++)
-                    {
-                        Header.T1File[i].ID = RCFReader2.ReadUInt32();
-                        Header.T1File[i].Offset = RCFReader2.ReadUInt32();
-                        Header.T1File[i].Size = RCFReader2.ReadUInt32();
-                        Header.T1File[i].CompressedSize = Header.T1File[i].Size;
-                        Header.T1File[i].CompressionFlag = 0;
-                    }
+                    Load(reader, reader.BaseStream.Length);
+                }
+            }
+
+            //using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            //    Load(fileStream);
+        }
+
+        public void Load(BinaryReader reader, long length)
+        {
+            BinaryReader2 reader2 = new BinaryReader2(reader.BaseStream);
+            BinaryReader hReader = reader;
+            reader.ReadChars(0x20); // Format Name
+            byte Flag1 = reader.ReadByte();
+            byte Flag2 = reader.ReadByte();
+            bool Flag3 = reader.ReadBoolean();
+            bool Flag4 = reader.ReadBoolean();
+            if (Flag3)
+            {
+                hReader = reader2;
+            }
+            uint T1Offset = hReader.ReadUInt32();
+            uint T1Size = hReader.ReadUInt32();
+            uint T2Offset = hReader.ReadUInt32();
+            uint T2Size = hReader.ReadUInt32();
+            uint Zero1 = hReader.ReadUInt32();
+            uint FileCount = hReader.ReadUInt32();
+
+            hReader.BaseStream.Position = T1Offset;
+            for (int i = 0; i < FileCount; i++)
+            {
+                FileEntry file = new FileEntry();
+                file.CRC = hReader.ReadUInt32();
+                file.Offset = hReader.ReadUInt32();
+                if (Flag2 != 0)
+                {
+                    file.Size = hReader.ReadInt32();
+                    file.CompressedSize = file.Size;
                 }
                 else
                 {
                     // CTTR GC frontend.rcf - compression handling not yet implemented
-                    for (Int32 i = 0; i <= Header.Files - 1; i++)
-                    {
-                        Header.T1File[i].ID = RCFReader2.ReadUInt32();
-                        Header.T1File[i].Offset = RCFReader2.ReadUInt32();
-                        Header.T1File[i].CompressedSize = RCFReader2.ReadUInt32();
-                        Header.T1File[i].Size = RCFReader2.ReadUInt32();
-                        Header.T1File[i].CompressionFlag = RCFReader2.ReadUInt32();
-                    }
+                    file.CompressedSize = hReader.ReadInt32();
+                    file.Size = hReader.ReadInt32();
+                    file.CompressionFlag = hReader.ReadUInt32();
+                }
+                Files.Add(file);
+            }
+            List<FileEntry> SortList = Files.OrderBy(a => a.Offset).ToList();
+
+            hReader.BaseStream.Position = T2Offset;
+            uint Align = reader.ReadUInt32();
+            uint Zero2 = reader.ReadUInt32();
+            FileEntry HashDict = null;
+            for (int i = 0; i < FileCount; i++)
+            {
+                FileEntry file = SortList[i];
+                uint TimeModified = reader.ReadUInt32();
+                file.LastModifiedTime = new DateTime(1970, 1, 1).AddSeconds(TimeModified);
+                uint Align2 = reader.ReadUInt32();
+                uint Zero3 = reader.ReadUInt32();
+                int NameLength = reader.ReadInt32();
+                file.Name = new string(reader.ReadChars(NameLength - 1));
+                uint Zero4 = reader.ReadUInt32();
+                if (file.Name == "hashdictionary.txt")
+                {
+                    HashDict = file;
                 }
             }
 
-            RCF.Position = Header.T2Offset;
-
-            int hashID = -1;
-            Header.NamesAligment = RCFReader.ReadUInt32();
-            Header.Gap2 = RCFReader.ReadUInt32();
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
+            // Some versions of Titans/MoM include a hash dictionary for their hashed file names
+            if (HashDict != null)
             {
-                Header.T2File[i].SomeShit1 = RCFReader.ReadUInt32();
-                Header.T2File[i].Align = RCFReader.ReadUInt32();
-                Header.T2File[i].Gap1 = RCFReader.ReadUInt32();
-                Header.T2File[i].NameLen = RCFReader.ReadUInt32();
-                char[] tempName = RCFReader.ReadChars((int)Header.T2File[i].NameLen - 1);
-                Header.T2File[i].Name = new string(tempName);
-                Header.T2File[i].Gap2 = (uint)RCFReader.ReadInt32();
-                Header.T2File[i].External = "";
-                if (Header.T2File[i].Name == "hashdictionary.txt")
-                {
-                    hashID = i;
-                }
-            }
-
-            Int32 n = 1;
-            while (n < Header.Files)
-            {
-                if (Header.T1File[n].Offset < Header.T1File[n - 1].Offset)
-                {
-                    RCF_TABLE1 tmp = Header.T1File[n];
-                    Header.T1File[n] = Header.T1File[n - 1];
-                    Header.T1File[n - 1] = tmp;
-                    if (n > 1)
-                        n -= 2;
-                }
-                n += 1;
-            }
-            for (UInt32 i = 0; i <= Header.Files - 1; i++)
-                Header.T1File[i].Pos = i;
-            n = 1;
-            while (n < Header.Files)
-            {
-                if (Header.T1File[n].ID < Header.T1File[n - 1].ID)
-                {
-                    RCF_TABLE1 tmp = Header.T1File[n];
-                    Header.T1File[n] = Header.T1File[n - 1];
-                    Header.T1File[n - 1] = tmp;
-                    if (n > 1)
-                        n -= 2;
-                }
-                n += 1;
-            }
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
-            {
-                for (UInt32 j = 0; j <= Header.Files - 1; j++)
-                {
-                    if (i == Header.T1File[j].Pos)
-                        Header.T2File[i].Ref = j;
-                }
-            }
-
-            if (hashID != -1)
-            {
-                RCF.Position = Header.T1File[Header.T2File[hashID].Ref].Offset;
-                byte[] hashbuffer = RCFReader.ReadBytes((int)Header.T1File[Header.T2File[hashID].Ref].Size);
+                reader.BaseStream.Position = HashDict.Offset;
+                byte[] hashbuffer = reader.ReadBytes((int)HashDict.Size);
                 Dictionary<string, string> hashes = new Dictionary<string, string>();
                 using (MemoryStream hashstream = new MemoryStream(hashbuffer))
                 {
@@ -287,76 +226,71 @@ namespace RadcoreCementFile
                     }
                 }
 
-                for (Int32 i = 0; i <= Header.Files - 1; i++)
+                for (int i = 0; i < FileCount; i++)
                 {
-                    string key = Header.T2File[i].Name.Split("\\").Last();
+                    string key = Files[i].Name.Split("\\").Last();
                     if (hashes.ContainsKey(key))
                     {
-                        Header.T2File[i].Name = hashes[key];
+                        Files[i].Name = hashes[key];
                     }
                 }
             }
 
-            RCFReader.Close();
-            RCFReader2.Close();
-            RCF.Close();
+        }
 
-            return;
-        }
-        /// <summary>
-        ///     ''' Uses T2 index
-        ///     ''' </summary>
-        public void ExtractItem(UInt32 ind, string Path)
+        public void ExtractItem(FileEntry entry, string path)
         {
-            if (!System.IO.File.Exists(RCF_Path))
+            if (!File.Exists(FullName))
                 return;
-            if (Path[Path.Length - 1] != '\\')
-                Path += @"\";
-            FileStream RCF = new FileStream(RCF_Path, FileMode.Open, FileAccess.Read);
-            BinaryReader RCFReader = new BinaryReader(RCF);
-            string[] Folders = Header.T2File[ind].Name.Split('\\');
-            FileStream File = new FileStream(Path + Folders[Folders.Length - 1], FileMode.Create, FileAccess.Write);
-            BinaryWriter FileWriter = new BinaryWriter(File);
-            RCF.Position = Header.T1File[Header.T2File[ind].Ref].Offset;
-            FileWriter.Write(RCFReader.ReadBytes((int)Header.T1File[Header.T2File[ind].Ref].Size));
-            FileWriter.Close();
-            File.Close();
-            RCFReader.Close();
-            RCF.Close();
-            return;
-        }
-        public void ExtractRCF(string Path)
-        {
-            if (!File.Exists(RCF_Path))
-                return;
-            if (Path[Path.Length - 1] != '\\')
-                Path += @"\";
-            FileStream RCF = new FileStream(RCF_Path, FileMode.Open, FileAccess.Read);
-            BinaryReader RCFReader = new BinaryReader(RCF);
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
+            if (entry.CompressionFlag == 1)
+                throw new NotImplementedException("Compressed files not implemented yet.");
+
+            using (var br = new FileStream(FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 0x10000, FileOptions.SequentialScan))
             {
-                string check = Path;
-                string[] Folders = Header.T2File[i].Name.Replace('/','\\').Split('\\');
-                for (Int32 j = 0; j <= Folders.Length - 2; j++)
+                using (var bw = new FileStream(path, FileMode.Create, FileAccess.Write))
                 {
-                    check += Folders[j] + @"\";
-                    Directory.CreateDirectory(System.IO.Path.GetDirectoryName(check));
-                }
-                check += Folders[Folders.Length - 1];
-                RCF.Position = Header.T1File[Header.T2File[i].Ref].Offset;
-                byte[] bytes = RCFReader.ReadBytes((int)Header.T1File[Header.T2File[i].Ref].Size);
-                if (check.ToLower().EndsWith(".rsd"))
-                {
-                    using (MemoryStream ms = new MemoryStream(bytes))
+                    using (BinaryReader reader = new BinaryReader(br))
                     {
-                        using (BinaryReader reader = new BinaryReader(ms))
+                        reader.BaseStream.Position = entry.Offset;
+                        using (BinaryWriter writer = new BinaryWriter(bw))
+                        {
+                            writer.Write(reader.ReadBytes(entry.Size));
+                        }
+                    }
+                }
+            }
+        }
+        
+        public void ExtractArchive(string path)
+        {
+            if (!File.Exists(FullName))
+                return;
+            string mainPath = System.IO.Path.GetDirectoryName(path) + @"\";
+            bool ExtractRealAudio = true;
+
+            using (var br = new FileStream(FullName, FileMode.Open, FileAccess.Read, FileShare.Read, 0x10000, FileOptions.SequentialScan))
+            {
+                using (BinaryReader freader = new BinaryReader(br))
+                {
+                    List<RCF.FileEntry> SortList = Files.OrderBy(a => a.Offset).ToList(); // probably faster this way
+                    foreach (FileEntry entry in SortList)
+                    {
+                        if (entry.CompressionFlag == 1)
+                        {
+                            continue;
+                        }
+                        string foutPath = mainPath + entry.Name;
+                        string fdirPath = System.IO.Path.GetDirectoryName(foutPath);
+                        freader.BaseStream.Position = entry.Offset;
+
+                        if (ExtractRealAudio && entry.Name.ToLower().EndsWith(".rsd"))
                         {
                             Pure3D.RSD RSD = new Pure3D.RSD();
-                            RSD.Load(reader, bytes.Length);
+                            RSD.Load(freader, entry.Size);
 
                             if (!Pure3D.Util.ExportToGodot)
                             {
-                                string outPath = System.IO.Path.GetDirectoryName(check) + "\\Sounds\\";
+                                string outPath = System.IO.Path.GetDirectoryName(path) + "\\Sounds\\";
                                 outPath += RSD.ShortName + ".wav";
                                 string dirPath = System.IO.Path.GetDirectoryName(outPath);
                                 Directory.CreateDirectory(dirPath);
@@ -402,7 +336,7 @@ namespace RadcoreCementFile
                                 BinaryWriter writer = new BinaryWriter(file);
                                 writer.Write(SoundData);
                                 writer.Close();
-                                
+
                                 if (tracks > 1 && tracks < 32)
                                 {
                                     for (int t = 1; t < tracks; t++)
@@ -442,7 +376,7 @@ namespace RadcoreCementFile
                             }
                             else
                             {
-                                string outPath = System.IO.Path.GetDirectoryName(check) + "\\Sounds\\";
+                                string outPath = System.IO.Path.GetDirectoryName(path) + "\\Sounds\\";
                                 outPath += RSD.ShortName + ".res";
                                 string dirPath = System.IO.Path.GetDirectoryName(outPath);
                                 Directory.CreateDirectory(dirPath);
@@ -462,401 +396,21 @@ namespace RadcoreCementFile
                                 }
                             }
                         }
-                    }
-                }
-                else
-                {
-                    //Console.WriteLine("RCF Extract: " + Folders[Folders.Length - 1] + " " + (i + 1).ToString() + @"\" + Header.Files.ToString());
-                    FileStream File = new FileStream(check, FileMode.Create, FileAccess.Write);
-                    BinaryWriter FileWriter = new BinaryWriter(File);
-                    FileWriter.Write(bytes);
-                    FileWriter.Close();
-                    File.Close();
-                }
-            }
-            RCFReader.Close();
-            RCF.Close();
-            return;
-        }
+                        else
+                        {
+                            Directory.CreateDirectory(fdirPath);
+                            using (var bw = new FileStream(foutPath, FileMode.Create, FileAccess.Write))
+                            {
+                                using (BinaryWriter writer = new BinaryWriter(bw))
+                                {
+                                    writer.Write(freader.ReadBytes(entry.Size));
+                                }
+                            }
+                        }
 
-        public async Task ExtractRCFAsync(string Path)
-        {
-            if (!File.Exists(RCF_Path))
-                return;
-            if (Path[Path.Length - 1] != '\\')
-                Path += @"\";
-
-            IList<Task> editTaskList = new List<Task>();
-
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
-            {
-                editTaskList.Add(ExtractFileAsync(Path, i));
-            }
-
-            await Task.WhenAll(editTaskList);
-            editTaskList.Clear();
-
-        }
-        private async Task ExtractFileAsync(string Path, int i)
-        {
-            FileStream RCF = new FileStream(RCF_Path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            RCF.Seek(Header.T1File[Header.T2File[i].Ref].Offset, SeekOrigin.Begin);
-
-            string check = Path;
-            string[] Folders = Header.T2File[i].Name.Split('\\');
-            for (Int32 j = 0; j <= Folders.Length - 2; j++)
-            {
-                check += Folders[j] + @"\";
-                if (!Directory.Exists(check))
-                    Directory.CreateDirectory(check);
-            }
-            check += Folders[Folders.Length - 1];
-            //Console.WriteLine("RCF Extract: " + check + " size: " + (int)Header.T1File[Header.T2File[i].Ref].Size);
-            Stream File = System.IO.File.Open(check, FileMode.Create); 
-            byte[] Data = new byte[(int)Header.T1File[Header.T2File[i].Ref].Size];
-            try
-            {
-                await RCF.ReadAsync(Data, 0, (int)Header.T1File[Header.T2File[i].Ref].Size);
-            }
-            catch
-            {
-                Console.WriteLine("Read Error: " + check);
-            }
-            try
-            {
-                await File.WriteAsync(Data, 0, (int)Header.T1File[Header.T2File[i].Ref].Size);
-            }
-            catch
-            {
-                Console.WriteLine("Write Error: " + check);
-            }
-
-            File.Close();
-            RCF.Close();
-
-            //meta.PassIterator++;
-            //meta.PassPercent = (int)((meta.PassIterator / (float)meta.PassCount) * 20f) + 5;
-        }
-
-        /// <summary>
-        ///     ''' Uses T1 index
-        ///     ''' </summary>
-        public void GetStream(UInt32 ind, ref MemoryStream MS)
-        {
-            MS = new MemoryStream((int)Header.T1File[ind].Size);
-            FileStream RCF = new FileStream(RCF_Path, FileMode.Open, FileAccess.Read);
-            BinaryReader RCFReader = new BinaryReader(RCF);
-            RCF.Position = Header.T1File[ind].Offset;
-            BinaryWriter MSW = new BinaryWriter(MS);
-            MSW.Write(RCFReader.ReadBytes((int)Header.T1File[ind].Size));
-            RCFReader.Close();
-            RCF.Close();
-            return;
-        }
-        public void GetStream(UInt32 ind, ref FileStream MS)
-        {
-            FileStream RCF = new FileStream(RCF_Path, FileMode.Open, FileAccess.Read);
-            BinaryReader RCFReader = new BinaryReader(RCF);
-            RCF.Position = Header.T1File[ind].Offset;
-            BinaryWriter MSW = new BinaryWriter(MS);
-            MSW.Write(RCFReader.ReadBytes((int)Header.T1File[ind].Size));
-            RCFReader.Close();
-            RCF.Close();
-            return;
-        }
-        public void Pack(string NewPath, UInt32 Alignment = 2048)
-        {
-            if (NewPath == RCF_Path)
-                return;
-
-            FileStream NRCF = new FileStream(NewPath, FileMode.Create, FileAccess.Write);
-            BinaryWriter NRCFWriter = new BinaryWriter(NRCF);
-            BinaryWriter2 NRCFWriter2 = new BinaryWriter2(NRCF);
-            //Console.WriteLine("RCF: Recalculating...");
-            Recalculate(Alignment);
-            for (Int32 i = 0; i <= 31; i++)
-            {
-                if (i < Header.signature.Length)
-                    NRCFWriter.Write(Header.signature[i]);
-                else
-                    NRCFWriter.Write(System.Convert.ToByte(0));
-            }
-            //Console.WriteLine("RCF: Writing header...");
-            NRCFWriter.Write(Header.Flag1);
-            NRCFWriter.Write(Header.Flag2);
-            NRCFWriter.Write(Header.Flag3);
-            NRCFWriter.Write(Header.Flag4);
-
-            if (!Header.Flag3)
-            {
-                NRCFWriter.Write(Header.T1Offset);
-                NRCFWriter.Write(Header.T1Size);
-                NRCFWriter.Write(Header.T2Offset);
-                NRCFWriter.Write(Header.T2Size);
-                NRCFWriter.Write(Header.Gap1);
-                NRCFWriter.Write(Header.Files);
-                NRCF.Position = Header.T1Offset;
-                for (Int32 i = 0; i <= Header.Files - 1; i++)
-                {
-                    NRCFWriter.Write(Header.T1File[i].ID);
-                    NRCFWriter.Write(Header.T1File[i].Offset);
-                    NRCFWriter.Write(Header.T1File[i].Size);
-                }
-            }
-            else
-            {
-                NRCFWriter2.WriteBigEndian(Header.T1Offset);
-                NRCFWriter2.WriteBigEndian(Header.T1Size);
-                NRCFWriter2.WriteBigEndian(Header.T2Offset);
-                NRCFWriter2.WriteBigEndian(Header.T2Size);
-                NRCFWriter2.WriteBigEndian(Header.Gap1);
-                NRCFWriter2.WriteBigEndian(Header.Files);
-                NRCF.Position = Header.T1Offset;
-
-                if (Header.Flag2 >= 1)
-                {
-                    for (Int32 i = 0; i <= Header.Files - 1; i++)
-                    {
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].ID);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Offset);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Size);
-                    }
-                }
-                else
-                {
-                    // CTTR GC frontend.rcf - compression handling not yet implemented
-                    for (Int32 i = 0; i <= Header.Files - 1; i++)
-                    {
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].ID);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Offset);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].CompressedSize);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Size);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].CompressionFlag);
                     }
                 }
             }
-            
-            NRCF.Position = Header.T2Offset;
-            NRCFWriter.Write(Header.NamesAligment);
-            NRCFWriter.Write(Header.Gap2);
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
-            {
-                NRCFWriter.Write(Header.T2File[i].SomeShit1);
-                NRCFWriter.Write(Header.T2File[i].Align);
-                NRCFWriter.Write(Header.T2File[i].Gap1);
-                NRCFWriter.Write(Header.T2File[i].NameLen);
-                for (Int32 j = 0; j <= Header.T2File[i].NameLen - 2; j++)
-                    NRCFWriter.Write(System.Convert.ToChar(Header.T2File[i].Name[j]));
-                NRCFWriter.Write(Header.T2File[i].Gap2);
-            }
-            RCF ORCF = new RCF();
-            ORCF.OpenRCF(RCF_Path);
-            for (UInt32 i = 0; i <= Header.Files - 1; i++)
-            {
-                //Console.WriteLine("RCF Pack: " + Header.T2File[Header.T1File[i].Pos].Name + " " + (i + 1).ToString() + @"\" + Header.Files.ToString());
-                NRCF.Position = Header.T1File[i].Offset;
-                if (Header.T2File[Header.T1File[i].Pos].External == "")
-                    ORCF.GetStream(i, ref NRCF);
-                else
-                    NRCFWriter.Write(File.ReadAllBytes(Header.T2File[Header.T1File[i].Pos].External));
-            }
-            NRCFWriter.Close();
-            NRCFWriter2.Close();
-            NRCF.Close();
-
-            return;
-        }
-
-        // Requires all files to be extracted and paths loaded into T2File[].External
-        public async Task PackAsync(string NewPath, string FolderPath, UInt32 Alignment = 2048)
-        {
-            //if (NewPath == RCF_Path)
-                //return;
-
-            FileStream NRCF = new FileStream(NewPath, FileMode.Create, FileAccess.Write, FileShare.Write);
-            BinaryWriter NRCFWriter = new BinaryWriter(NRCF);
-            BinaryWriter2 NRCFWriter2 = new BinaryWriter2(NRCF);
-            //Console.WriteLine("RCF: Recalculating...");
-            Recalculate(Alignment);
-            for (Int32 i = 0; i <= 31; i++)
-            {
-                if (i < Header.signature.Length)
-                    NRCFWriter.Write(Header.signature[i]);
-                else
-                    NRCFWriter.Write(System.Convert.ToByte(0));
-            }
-            //Console.WriteLine("RCF: Writing header...");
-            NRCFWriter.Write(Header.Flag1);
-            NRCFWriter.Write(Header.Flag2);
-            NRCFWriter.Write(Header.Flag3);
-            NRCFWriter.Write(Header.Flag4);
-
-            if (!Header.Flag3)
-            {
-                NRCFWriter.Write(Header.T1Offset);
-                NRCFWriter.Write(Header.T1Size);
-                NRCFWriter.Write(Header.T2Offset);
-                NRCFWriter.Write(Header.T2Size);
-                NRCFWriter.Write(Header.Gap1);
-                NRCFWriter.Write(Header.Files);
-                NRCF.Position = Header.T1Offset;
-                for (Int32 i = 0; i <= Header.Files - 1; i++)
-                {
-                    NRCFWriter.Write(Header.T1File[i].ID);
-                    NRCFWriter.Write(Header.T1File[i].Offset);
-                    NRCFWriter.Write(Header.T1File[i].Size);
-                }
-            }
-            else
-            {
-                NRCFWriter2.WriteBigEndian(Header.T1Offset);
-                NRCFWriter2.WriteBigEndian(Header.T1Size);
-                NRCFWriter2.WriteBigEndian(Header.T2Offset);
-                NRCFWriter2.WriteBigEndian(Header.T2Size);
-                NRCFWriter2.WriteBigEndian(Header.Gap1);
-                NRCFWriter2.WriteBigEndian(Header.Files);
-                NRCF.Position = Header.T1Offset;
-
-                if (Header.Flag2 >= 1)
-                {
-                    for (Int32 i = 0; i <= Header.Files - 1; i++)
-                    {
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].ID);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Offset);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Size);
-                    }
-                }
-                else
-                {
-                    // CTTR GC frontend.rcf - compression handling not yet implemented
-                    for (Int32 i = 0; i <= Header.Files - 1; i++)
-                    {
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].ID);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Offset);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].CompressedSize);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].Size);
-                        NRCFWriter2.WriteBigEndian(Header.T1File[i].CompressionFlag);
-                    }
-                }
-            }
-
-            NRCF.Position = Header.T2Offset;
-            NRCFWriter.Write(Header.NamesAligment);
-            NRCFWriter.Write(Header.Gap2);
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
-            {
-                NRCFWriter.Write(Header.T2File[i].SomeShit1);
-                NRCFWriter.Write(Header.T2File[i].Align);
-                NRCFWriter.Write(Header.T2File[i].Gap1);
-                NRCFWriter.Write(Header.T2File[i].NameLen);
-                for (Int32 j = 0; j <= Header.T2File[i].NameLen - 2; j++)
-                    NRCFWriter.Write(System.Convert.ToChar(Header.T2File[i].Name[j]));
-                NRCFWriter.Write(Header.T2File[i].Gap2);
-            }
-
-            NRCFWriter.Close();
-            NRCFWriter2.Close();
-            NRCF.Close();
-
-            IList<Task> editTaskList = new List<Task>();
-
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
-            {
-                if (Header.T2File[Header.T1File[i].Pos].External == "")
-                    throw new Exception("Missing external file: " + Header.T2File[Header.T1File[i].Pos].Name);
-                else
-                    editTaskList.Add(PackFileAsync(NewPath, i));
-            }
-
-            await Task.WhenAll(editTaskList);
-            editTaskList.Clear();
-        }
-
-        public long DirSize(DirectoryInfo d)
-        {
-            long size = 0;
-            foreach (FileInfo file in d.EnumerateFiles())
-            {
-                size += file.Length;
-            }
-            foreach (DirectoryInfo di in d.EnumerateDirectories())
-            {
-                size += DirSize(di);
-            }
-            return size;
-        }
-
-        private async Task PackFileAsync(string outpath, int i)
-        {
-            FileStream ext = new FileStream(Header.T2File[Header.T1File[i].Pos].External, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            Stream rcf = System.IO.File.Open(outpath, FileMode.Open, FileAccess.Write, FileShare.Write);
-            rcf.Seek((int)Header.T1File[i].Offset, SeekOrigin.Begin);
-            byte[] Data = new byte[ext.Length];
-            try
-            {
-                await ext.ReadAsync(Data, 0, Data.Length);
-            }
-            catch
-            {
-                Console.WriteLine("Read Error");
-            }
-            try
-            {
-                await rcf.WriteAsync(Data, 0, Data.Length);
-            }
-            catch
-            {
-                Console.WriteLine("Write Error");
-            }
-
-            rcf.Close();
-            ext.Close();
-
-            //meta.PassIterator++;
-            //meta.PassPercent = (int)((meta.PassIterator / (float)meta.PassCount) * 25f) + 75;
-        }
-
-
-        public void Recalculate(UInt32 Alignment = 2048)
-        {
-            Header.NamesAligment = Alignment;
-            Header.T1Offset = 60;
-            if (Header.Flag2 >= 1)
-            {
-                Header.T1Size = Header.Files * 12;
-            }
-            else
-            {
-                Header.T1Size = Header.Files * 20;
-            }
-            Header.T2Offset = ((Header.T1Offset + Header.T1Size - 1) / Alignment + 1) * Alignment;
-            Header.T2Size = 8 + Header.Files * 20;
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
-                Header.T2Size += Header.T2File[i].NameLen - 1;
-            UInt32 offset = Header.T2Offset;
-            UInt32 size = Header.T2Size;
-            for (Int32 i = 0; i <= Header.Files - 1; i++)
-            {
-                UInt32 ind = Header.T2File[i].Ref;
-                Header.T1File[ind].Offset = ((offset + size - 1) / Alignment + 1) * Alignment;
-                if (Header.T2File[i].External != "")
-                {
-                    FileInfo FI = new FileInfo(Header.T2File[i].External);
-                    Header.T1File[ind].Size = (uint)FI.Length;
-                    if (Header.T1File[ind].CompressionFlag != 1)
-                    {
-                        Header.T1File[ind].CompressedSize = Header.T1File[ind].Size;
-                    }
-                    else
-                    {
-                        // todo: compressed size and setting the compression flag to 0 when external is not compressed
-                    }
-                }
-                offset = Header.T1File[ind].Offset;
-                size = Header.T1File[ind].CompressedSize;
-            }
-            return;
         }
     }
 }

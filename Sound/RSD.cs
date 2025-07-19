@@ -55,7 +55,7 @@ namespace Pure3D
             Name = new string(reader.ReadChars(0x8C));
             Desc = new string(reader.ReadChars(0x100));
             reader.ReadBytes(0x65C); // padding to 0x800
-            Data = reader.ReadBytes((int)(length - reader.BaseStream.Position));
+            Data = reader.ReadBytes((int)(length - 0x800));
 
             if (Name.Contains(NameCheck1))
             {

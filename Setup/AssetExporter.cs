@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using Pure3D;
-using RadcoreCementFile;
 
 namespace CircusSetup
 {
@@ -233,6 +232,7 @@ namespace CircusSetup
 
         async Task ExportRCF(string inName)
         {
+            /*
             RCF_Manager rcf = null;
             await Task.Run(
                 () =>
@@ -241,6 +241,7 @@ namespace CircusSetup
                 }
                 );
             await rcf.ExtractAsync(inName, OutputPath);
+            */
             System.IO.File.Delete(inName);
             
             LevelsLeft--;

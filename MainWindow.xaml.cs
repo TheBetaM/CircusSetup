@@ -17,7 +17,7 @@ using Microsoft.Win32;
 using System.IO;
 using System.Diagnostics;
 using Pure3D.Chunks;
-using RadcoreCementFile;
+using RCF_Archive;
 using CircusSetup.Script;
 
 namespace CircusSetup
@@ -29,7 +29,7 @@ namespace CircusSetup
     {
 
         Pure3D.File P3D;
-        RCF CementFile;
+        RCF ArchiveFile;
         Pure3D.RSD RSD;
         CircusSetup.Script.Script ScriptFile;
         string fileName;
@@ -122,8 +122,8 @@ namespace CircusSetup
             }
             else
             {
-                CementFile = new RCF();
-                CementFile.OpenRCF(fileName);
+                ArchiveFile = new RCF();
+                ArchiveFile.Load(fileName);
                 LoadTreeRCF();
             }
             statusText.Text = $"P3D loaded.";
@@ -190,7 +190,7 @@ namespace CircusSetup
             }
             if (ModeRCF)
             {
-
+                textBox.Text = ((TreeViewItem)e.NewValue).Tag.ToString();
                 return;
             }
             if (ModeScript)
@@ -211,7 +211,8 @@ namespace CircusSetup
                 byte[] imagedata = chunk.OnImagePreview();
                 if (imagedata != null)
                 {
-                    using (System.IO.MemoryStream stream = new(imagedata)){
+                    using (System.IO.MemoryStream stream = new(imagedata))
+                    {
                         previewImage.Source = BitmapFrame.Create(stream,
                             BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                     }
@@ -307,23 +308,38 @@ namespace CircusSetup
             if (ModeRCF)
             {
                 if (treeView.SelectedItem == null) return;
-                if (((TreeViewItem)treeView.SelectedItem).Tag is RCF.RCF_HEADER)
+                if (((TreeViewItem)treeView.SelectedItem).Tag is RCF)
                 {
                     SaveFileDialog sfd2 = new SaveFileDialog();
                     sfd2.Filter = "All files|*.*";
+                    sfd2.FileName = "item";
                     if (sfd2.ShowDialog() == true)
                     {
-                        CementFile.ExtractRCF(System.IO.Path.GetDirectoryName(sfd2.FileName));
+                        try
+                        {
+                            ArchiveFile.ExtractArchive(sfd2.FileName);
+                        }
+                        catch (Exception ex)
+                        {
+                            statusText.Text = $"Failed to export file: {ex.Message}";
+                        }
                     }
                 }
-                else if (((TreeViewItem)treeView.SelectedItem).Tag is RCF.RCF_TABLE2 item)
+                else if (((TreeViewItem)treeView.SelectedItem).Tag is RCF.FileEntry item)
                 {
                     SaveFileDialog sfd2 = new SaveFileDialog();
                     sfd2.Filter = "All files|*.*";
-                    sfd2.FileName = item.Name;
+                    sfd2.FileName = "item";
                     if (sfd2.ShowDialog() == true)
                     {
-                        //CementFile.ExtractItem(0, sfd2.FileName);
+                        try
+                        {
+                            ExportRCF_Entry(item, sfd2.FileName);
+                        }
+                        catch (Exception ex)
+                        {
+                            statusText.Text = $"Failed to export file: {ex.Message}";
+                        }
                     }
                 }
                 return;
@@ -331,7 +347,7 @@ namespace CircusSetup
             if (ModeScript)
             {
                 SaveFileDialog sfd2 = new SaveFileDialog();
-                sfd2.FileName = ScriptFile.FullName.Split('\\').Last().Replace(".lua",".lub");//"script.lub";
+                sfd2.FileName = ScriptFile.FullName.Split('\\').Last().Replace(".lua", ".lub");//"script.lub";
                 sfd2.Filter = "LUB files|*.lub";
                 if (sfd2.ShowDialog() == true)
                 {
@@ -375,7 +391,7 @@ namespace CircusSetup
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            
+
         }
 
         private void toggleWrapButton_Click(object sender, RoutedEventArgs e)
@@ -436,7 +452,7 @@ namespace CircusSetup
             {
                 //P3D = new Pure3D.File();
                 //P3D.Load(paths[p]);
-                
+
                 try
                 {
                     P3D = new Pure3D.File();
@@ -446,7 +462,7 @@ namespace CircusSetup
                 {
                     errors.Add(paths[p]);
                 }
-                
+
                 Recursive_CheckUnk(P3D.RootChunk, ref UnkTypes, ref UnkTypesFiles, paths[p]);
             }
             for (int i = 0; i < UnkTypes.Count; i++)
@@ -472,7 +488,7 @@ namespace CircusSetup
                 */
                 if (item is Mesh || item is Skin)
                 {
-                    
+
                     foreach (var pitem in item.Children)
                     {
                         if (pitem is PrimitiveGroupCTTR prim)
@@ -485,7 +501,7 @@ namespace CircusSetup
                             }
                         }
                     }
-                    
+
                 }
                 Recursive_CheckUnk(item, ref UnkTypes, ref UnkTypesFiles, file);
             }
@@ -515,21 +531,34 @@ namespace CircusSetup
         {
             treeView.Items.Clear();
             TreeViewItem RootChunk = new TreeViewItem();
-            RootChunk.Tag = CementFile.Header;
+            RootChunk.Tag = ArchiveFile;
             RootChunk.Header = System.IO.Path.GetFileName(fileName);
             treeView.Items.Add(RootChunk);
-            for (int i = 0; i < CementFile.Header.Files; i++)
+
+            bool ViewSorted = true;
+            if (ViewSorted)
             {
-                LoadTreeNodeRCF(RootChunk, i);
+                List<RCF.FileEntry> SortList = ArchiveFile.Files.OrderBy(a => a.Name).ToList();
+                for (int i = 0; i < SortList.Count; i++)
+                {
+                    LoadTreeNodeRCF(RootChunk, SortList[i], SortList[i].Name);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < ArchiveFile.Files.Count; i++)
+                {
+                    LoadTreeNodeRCF(RootChunk, ArchiveFile.Files[i], ArchiveFile.Files[i].Name);
+                }
             }
             RootChunk.IsExpanded = true;
         }
 
-        void LoadTreeNodeRCF(TreeViewItem Root, int item)
+        void LoadTreeNodeRCF(TreeViewItem Root, object tag, string name)
         {
             TreeViewItem ChunkNode = new TreeViewItem();
-            ChunkNode.Tag = CementFile.Header.T2File[item];
-            ChunkNode.Header = CementFile.Header.T2File[item].Name;
+            ChunkNode.Tag = tag;
+            ChunkNode.Header = name;
             Root.Items.Add(ChunkNode);
         }
 
@@ -633,7 +662,7 @@ namespace CircusSetup
                 BinaryWriter writer = new BinaryWriter(file);
                 writer.Write(SoundData);
                 writer.Close();
-                
+
                 if (tracks > 1 && tracks < 32)
                 {
                     for (int t = 1; t < tracks; t++)
@@ -813,6 +842,14 @@ namespace CircusSetup
                 }
                 chars[ptr]++;
             }
+        }
+        
+        void ExportRCF_Entry(RCF.FileEntry entry, string path)
+        {
+            string outPath = System.IO.Path.GetDirectoryName(path) + @"\" + entry.Name;
+            string dirPath = System.IO.Path.GetDirectoryName(outPath);
+            Directory.CreateDirectory(dirPath);
+            ArchiveFile.ExtractItem(entry, outPath);
         }
     }
 }
